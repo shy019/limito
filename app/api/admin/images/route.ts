@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
       const folder = `limito/products/${productId}/${colorName.toLowerCase().replace(/\s+/g, '-')}`;
       const url = await uploadImage(base64Image, folder);
-      return NextResponse.json({ success: true, url });
+      return NextResponse.json({ success: true, path: url });
     }
 
     if (action === 'delete' && publicId) {

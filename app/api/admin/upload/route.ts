@@ -4,16 +4,21 @@ import { saveConfigToSheets } from '@/lib/sheets-config';
 
 export async function POST(request: NextRequest) {
   try {
-    const { image } = await request.json();
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
     
-    if (!image) {
-      return NextResponse.json({ success: false, error: 'No image provided' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
     }
 
-    const url = await uploadImage(image, 'limito/backgrounds');
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = `data:${file.type};base64,${buffer.toString('base64')}`;
+
+    const url = await uploadImage(base64, 'limito/backgrounds');
     await saveConfigToSheets('background_image', url);
 
-    return NextResponse.json({ success: true, url });
+    return NextResponse.json({ success: true, path: url });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ success: false, error: 'Upload failed' }, { status: 500 });

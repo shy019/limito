@@ -159,7 +159,7 @@ export default function CatalogoPage() {
               {products.filter(p => p.id).map((product) => (
                 <ProductCard key={`${product.id}-${cartCount}`} product={product} onClick={() => {
                   setSelectedProduct(product);
-                  router.push(`/?product=${product.id}`, { scroll: false });
+                  router.push(`/catalog?product=${product.id}`, { scroll: false });
                 }} />
               ))}
             </div>
@@ -173,7 +173,7 @@ export default function CatalogoPage() {
         {selectedProduct && (
           <ProductModal product={selectedProduct} locale={locale} onClose={() => {
             setSelectedProduct(null);
-            router.push('/', { scroll: false });
+            router.push('/catalog', { scroll: false });
           }} t={t} setToast={setToast} />
         )}
 
@@ -427,7 +427,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
   const modalRoot = document.getElementById('modal-root') || document.body;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/80" style={{ zIndex: 50000 }}>
+    <div className="fixed inset-0 bg-black/80" style={{ zIndex: 50000, top: '80px' }}>
     <style dangerouslySetInnerHTML={{
       __html: `
         @keyframes spin {
