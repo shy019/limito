@@ -1,0 +1,665 @@
+'use client';
+
+import Image from 'next/image';
+import { useState, memo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { ChevronLeft, Check, Minus, Plus } from 'lucide-react';
+import { formatPrice, type Product } from '@/lib/products';
+import { cart } from '@/lib/cart';
+import LoadingScreen from '@/components/LoadingScreen';
+import Toast from '@/components/Toast';
+import Header from '@/components/Header';
+import ResponsiveProductImage from '@/components/ResponsiveProductImage';
+import AnimatedButton from '@/components/AnimatedButton';
+import BackgroundOverlay from '@/components/BackgroundOverlay';
+
+export default function CatalogoPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [locale, setLocale] = useState('es');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+  const t = useTranslations('catalog');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Recargar productos desde API
+  const loadProducts = async () => {
+    try {
+      const res = await fetch('/api/products?t=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch {}
+  };
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/store-config').then(res => res.json()),
+      fetch('/api/products?t=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }).then(res => res.json())
+    ])
+      .then(([configData, productsData]) => {
+        const mode = configData.config.mode;
+
+        if (mode === 'soldout') {
+          window.location.href = '/soldout';
+          return;
+        }
+
+        setProducts(productsData.products || []);
+
+        if (typeof document !== 'undefined') {
+          const cookieLocale = document.cookie.split('; ').find(row => row.startsWith('NEXT_LOCALE='))?.split('=')[1] || 'es';
+          setLocale(cookieLocale);
+        }
+        setCartCount(cart.getCount());
+
+        // Recrear reservas del carrito
+        const items = cart.get();
+        const sessionId = sessionStorage.getItem('limito_session_id');
+        if (sessionId && items.length > 0) {
+          items.forEach(item => {
+            if (item.productId && item.color && item.quantity) {
+              fetch('/api/cart/reserve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  productId: item.productId,
+                  color: item.color,
+                  quantity: item.quantity,
+                  sessionId,
+                }),
+              }).catch(() => {});
+            }
+          });
+        }
+
+        const handleCartUpdate = () => {
+          setCartCount(cart.getCount());
+          loadProducts();
+        };
+        window.addEventListener('cart-updated', handleCartUpdate);
+
+        loadProducts();
+        const timer = setTimeout(() => setLoading(false), 100);
+
+        return () => {
+          window.removeEventListener('cart-updated', handleCartUpdate);
+          clearTimeout(timer);
+        };
+      })
+      .catch(() => {
+        setTimeout(() => setLoading(false), 100);
+      });
+  }, []);
+
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    if (productId) {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        setTimeout(() => setSelectedProduct(product), 0);
+      }
+    }
+  }, [searchParams, products]);
+
+  const toggleLocale = () => {
+    const newLocale = locale === 'es' ? 'en' : 'es';
+    const productParam = searchParams.get('product');
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
+    setLocale(newLocale);
+    window.location.href = productParam ? `/?product=${productParam}` : '/';
+  };
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <BackgroundOverlay />
+      <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Header
+          locale={locale}
+          onLanguageToggle={toggleLocale}
+          cartCount={cartCount}
+        />
+
+        {!selectedProduct && (
+          <main style={{ flex: 1, width: '70%', margin: '0 auto', padding: '2rem 1.5rem', paddingTop: '120px' }} className="md:py-16">
+            <div className="mb-8 md:mb-12 text-center">
+              <h1 className="text-3xl md:text-6xl font-black mb-2 md:mb-4 animate-fade-in" style={{ color: '#ffffff' }}>{t('title')}</h1>
+              <p className="text-base md:text-xl font-medium animate-slide-up" style={{ color: 'rgba(255, 255, 255, 0.9)', animationDelay: '0.1s' }}>{t('subtitle')}</p>
+            </div>
+
+            <style jsx>{`
+              @keyframes fade-in {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              @keyframes slide-up {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .animate-fade-in {
+                animation: fade-in 0.6s ease-out;
+              }
+              .animate-slide-up {
+                animation: slide-up 0.6s ease-out;
+                animation-fill-mode: both;
+              }
+            `}</style>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4">
+              {products.filter(p => p.id).map((product) => (
+                <ProductCard key={`${product.id}-${cartCount}`} product={product} onClick={() => {
+                  setSelectedProduct(product);
+                  router.push(`/?product=${product.id}`, { scroll: false });
+                }} />
+              ))}
+            </div>
+          </main>
+        )}
+
+        {selectedProduct && (
+          <div style={{ flex: 1 }} />
+        )}
+
+        {selectedProduct && (
+          <ProductModal product={selectedProduct} locale={locale} onClose={() => {
+            setSelectedProduct(null);
+            router.push('/', { scroll: false });
+          }} t={t} setToast={setToast} />
+        )}
+
+        <footer style={{ backgroundColor: 'transparent', paddingTop: '20px', paddingBottom: '20px', flexShrink: 0, position: 'relative', zIndex: 100000 }}>
+          <div className="max-w-6xl mx-auto text-center">
+            <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('footer')}</p>
+          </div>
+        </footer>
+      </div>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
+  );
+}
+
+const ProductCard = memo(function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const t = useTranslations('catalog');
+  const mainColor = product.colors[0] || { images: ['/images/loading.png'], price: 0, stock: 0, name: '', hex: '#000000' };
+  const mainImage = mainColor.images?.[0] || '/images/loading.png';
+  const hoverImage = mainColor.images?.[1] || mainImage;
+
+  return (
+    <button
+      className="group cursor-pointer w-full text-left product-card relative transform transition-all duration-300 hover:-translate-y-2"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
+      type="button"
+      style={{ backgroundColor: 'transparent', border: 'none' }}
+    >
+      <div className="white-glow" style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'transparent',
+        transition: 'all 0.3s ease-in-out',
+        boxShadow: isHovered ? '1px 3px 124px 98px rgba(255, 214, 36, 0.75)' : '1px 3px 5px -1px rgba(255, 214, 36, 0.75)',
+        pointerEvents: 'none'
+      }}><span></span></div>
+      <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)' }}>
+        <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'transparent' }}>
+          <ResponsiveProductImage
+            src={isHovered && hoverImage ? hoverImage : mainImage}
+            alt={product.name}
+            width={800}
+            height={800}
+            loading="eager"
+            className="w-full h-full object-cover transition-transform duration-500"
+            style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+          />
+
+          {mainColor.stock === 0 ? (
+            <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: '#ff0000', color: '#ffffff' }}>
+              {t('soldOut')}
+            </div>
+          ) : mainColor.stock < 3 ? (
+            <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: 'transparent', color: '#ffd624', border: '1px solid #ffd624' }}>
+              {t('lowStock')}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div className="p-5 transition-all duration-300" style={{ backgroundColor: 'transparent', textAlign: 'right', transform: isHovered ? 'translateY(-5px)' : 'translateY(0)' }}>
+        <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? '#ffd624' : '#ffffff' }}>{product.name}</h3>
+        <p className="text-3xl md:text-5xl font-black" style={{ color: '#ffd624' }}>{formatPrice(mainColor.price)}</p>
+      </div>
+    </button>
+  );
+});
+
+function ProductModal({ product, locale, onClose, t, setToast }: {
+  product: Product;
+  locale: string;
+  onClose: () => void;
+  t: ReturnType<typeof useTranslations<'catalog'>>;
+  setToast: (toast: { message: string; type: 'error' | 'success' | 'info' } | null) => void
+}) {
+  const [selectedColor, setSelectedColor] = useState(0);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [cartQuantity, setCartQuantity] = useState(0);
+  const [availableStock, setAvailableStock] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!product) return;
+
+    setTimeout(() => setMounted(true), 0);
+    document.body.style.overflow = 'hidden';
+
+    const fetchStock = () => {
+      fetch(`/api/products/available-stock?productId=${product.id}&t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+        .then(res => res.json())
+        .then(data => {
+          const stockMap: Record<string, number> = {};
+          data.availableStock.forEach((item: { name: string; availableStock: number }) => {
+            stockMap[item.name] = item.availableStock;
+          });
+          setAvailableStock(stockMap);
+        })
+        .catch(() => {});
+    };
+
+    fetchStock();
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [product.id]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setAdded(false);
+      const items = cart.get();
+      const existing = items.find(
+        i => i.productId === product.id && i.color === product.colors[selectedColor].name
+      );
+      setCartQuantity(existing ? existing.quantity : 0);
+
+      if (existing && existing.quantity > 0) {
+        setAdded(true);
+      }
+    }, 0);
+  }, [selectedColor, product.id, product.colors]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const updateCartQuantity = () => {
+      if (cancelled) return;
+      const items = cart.get();
+      const existing = items.find(
+        i => i.productId === product.id && i.color === product.colors[selectedColor].name
+      );
+      setCartQuantity(existing ? existing.quantity : 0);
+    };
+
+    const handleCartUpdate = () => {
+      if (cancelled) return;
+
+      fetch(`/api/products/available-stock?productId=${product.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!cancelled) {
+            const stockMap: Record<string, number> = {};
+            data.availableStock.forEach((item: { name: string; availableStock: number }) => {
+              stockMap[item.name] = item.availableStock;
+            });
+            setAvailableStock(stockMap);
+          }
+        })
+        .catch(() => {});
+      updateCartQuantity();
+    };
+
+    window.addEventListener('cart-updated', handleCartUpdate);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('cart-updated', handleCartUpdate);
+    };
+  }, [product.id, product.colors, selectedColor]);
+
+  const currentColor = product.colors[selectedColor];
+  const images = currentColor.images.filter(img => img && img.trim() !== '');
+  const displayImages = images.length > 0 ? images : ['/images/loading.png'];
+  const realAvailableStock = availableStock[currentColor.name] ?? currentColor.stock;
+
+  const handleAddToCart = async () => {
+    const items = cart.get();
+    const existing = items.find(
+      i => i.productId === product.id && i.color === currentColor.name
+    );
+
+    const totalInCart = existing ? existing.quantity : 0;
+    const newTotal = totalInCart + quantity;
+    const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+
+    if (quantity > realAvailableStock) {
+      setToast({ message: t('onlyAvailable', { count: realAvailableStock }), type: 'error' });
+      return;
+    }
+
+    if (newTotal > 5) {
+      setToast({ message: t('maxPerColor', { count: totalInCart }), type: 'error' });
+      return;
+    }
+
+    if (totalItems + quantity > 5) {
+      setToast({ message: t('maxTotal'), type: 'error' });
+      return;
+    }
+
+    setLoading(true);
+    const timestamp = Date.now();
+
+    const cartResult = await cart.add({
+      productId: product.id,
+      name: product.name,
+      color: currentColor.name,
+      colorHex: currentColor.hex,
+      price: currentColor.price,
+      quantity: quantity,
+      image: displayImages[0],
+    });
+
+    if (!cartResult.success) {
+      setLoading(false);
+      setToast({ message: cartResult.error || t('errorAdding'), type: 'error' });
+      return;
+    }
+
+    setAdded(true);
+    setCartQuantity(newTotal);
+    setToast({ message: t('productAdded'), type: 'success' });
+
+    // Update stock after successful add
+    fetch(`/api/products/available-stock?productId=${product.id}&t=${timestamp}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const stockMap: Record<string, number> = {};
+        data.availableStock.forEach((item: { name: string; availableStock: number }) => {
+          stockMap[item.name] = item.availableStock;
+        });
+        setAvailableStock(stockMap);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  const handleQuantityChange = (newQty: number) => {
+    if (newQty > realAvailableStock) {
+      setToast({ message: t('onlyAvailable', { count: realAvailableStock }), type: 'error' });
+      return;
+    }
+    setQuantity(newQty);
+  };
+
+  if (!mounted) return null;
+
+  const modalRoot = document.getElementById('modal-root') || document.body;
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black/80" style={{ zIndex: 50000 }}>
+    <style dangerouslySetInnerHTML={{
+      __html: `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+          .modal-container { width: 100vw !important; height: calc(100vh - 160px) !important; background-color: transparent !important; overflow-y: scroll !important; -webkit-overflow-scrolling: touch !important; pointer-events: auto !important; margin-top: 80px !important; margin-bottom: 80px !important; }
+          .modal-content { display: block !important; height: auto !important; min-height: calc(100vh - 140px) !important; padding-top: 0 !important; }
+          .modal-title-wrapper { display: none !important; }
+          .modal-images { padding: 0 !important; background-color: transparent !important; padding-top: 80px !important; }
+          .modal-info { padding: 1.5rem !important; background-color: transparent !important; }
+        }
+      `
+    }} />
+      <button onClick={onClose} className="fixed hover:bg-white rounded-full z-50" style={{ padding: '1rem', left: '1rem', top: '75px', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+      <div className="modal-title-wrapper" style={{ width: '70%', margin: '0 auto', paddingTop: '5rem', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: 0 }}>
+        <div className="mb-8 md:mb-12 text-center">
+          <h1 className="text-6xl font-black mb-4" style={{ color: '#ffffff' }}>{t('edition').toUpperCase()} {product.edition}</h1>
+        </div>
+      </div>
+      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 150px)', pointerEvents: 'none' }}>
+      <div className="modal-container bg-white" style={{ width: '85vw', height: '85vh', pointerEvents: 'auto' }}>
+        <div className="modal-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div className="modal-images bg-gray-50 p-8 relative">
+          <div className="max-w-2xl mx-auto w-full">
+            <div className="mb-4 flex items-center justify-center" style={{ backgroundColor: 'transparent', width: '100%', height: '400px' }}>
+              <ResponsiveProductImage
+                src={displayImages[selectedImage]}
+                alt={product.name}
+                width={800}
+                height={800}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                priority
+                loading="eager"
+              />
+            </div>
+            <div className="grid grid-cols-4 gap-3" style={{ marginTop: '1rem' }}>
+              {displayImages.map((img, idx) => (
+                <button
+                  key={`${selectedColor}-${idx}`}
+                  onClick={() => setSelectedImage(idx)}
+                  className="aspect-square overflow-hidden"
+                  style={{ border: idx === selectedImage ? '2px solid #000' : '2px solid #ddd', backgroundColor: 'transparent' }}
+                >
+                  <Image src={img.replace('.webp', '-desktop.webp')} alt="" width={200} height={200} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal-info" style={{ paddingRight: '2rem', paddingBottom: '2rem', paddingLeft: '2rem', overflow: 'auto', backgroundColor: 'transparent' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem', marginTop: 0, color: '#ffffff' }} className="md:text-3xl">{product.name}</h1>
+
+          {realAvailableStock > 0 && (
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ffd624', marginBottom: '0.75rem' }} className="md:text-2xl">
+              {formatPrice(currentColor.price)}
+            </div>
+          )}
+
+          {realAvailableStock === 0 ? (
+            <div style={{ padding: '0.5rem 1rem', backgroundColor: '#ff0000', color: '#ffffff', display: 'inline-block', marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 'bold' }}>
+              {t('soldOut')}
+            </div>
+          ) : realAvailableStock < 3 ? (
+            <div style={{ padding: '0.5rem 1rem', backgroundColor: '#ffd624', color: '#000000', display: 'inline-block', marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 'bold' }}>
+              {t('lowStock')}
+            </div>
+          ) : null}
+
+          <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem' }}>
+            {t('shippingCalculated')}
+          </div>
+
+          <p style={{ marginBottom: '1.5rem', lineHeight: '1.6', color: '#ffffff', fontSize: '0.875rem' }} className="md:text-base">
+            {locale === 'en' && product.descriptionEn ? product.descriptionEn : product.description}
+          </p>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#ffffff' }}>{t('color')}</label>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+              {product.colors.map((color, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => { setSelectedColor(idx); setSelectedImage(0); }}
+                  className="transition-all duration-200 hover:scale-110"
+                  style={{
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    borderRadius: '50%',
+                    border: selectedColor === idx ? '3px solid #ffd624' : '2px solid rgba(255, 255, 255, 0.3)',
+                    backgroundColor: color.hex,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: selectedColor === idx ? '0 0 20px rgba(255, 214, 36, 0.5)' : 'none'
+                  }}
+                >
+                  {selectedColor === idx && <Check className="w-4 h-4 transition-transform duration-200 scale-110" style={{ color: color.hex === '#FFFFFF' ? '#000' : '#fff' }} />}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.875rem', color: '#ffffff', marginTop: '0.5rem' }}>{t(currentColor.name)}</p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#ffffff', marginBottom: '0.5rem' }}>
+              {t('quantity')}
+              {cartQuantity > 0 && (
+                <span style={{ marginLeft: '0.5rem', color: '#ffd624', fontSize: '0.75rem' }}>({cartQuantity} {t('inCart')})</span>
+              )}
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', padding: '4px', backgroundColor: 'rgba(255, 255, 255, 0.05)', width: 'fit-content', opacity: realAvailableStock === 0 ? 0.5 : 1 }}>
+              <button
+                onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1 || realAvailableStock === 0}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  cursor: (quantity <= 1 || realAvailableStock === 0) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: (quantity <= 1 || realAvailableStock === 0) ? 0.3 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (quantity > 1 && realAvailableStock > 0) {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+              >
+                <Minus style={{ width: '16px', height: '16px' }} />
+              </button>
+              <div style={{
+                minWidth: '40px',
+                textAlign: 'center',
+                color: '#ffffff',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                fontVariantNumeric: 'tabular-nums'
+              }}>
+                {quantity}
+              </div>
+              <button
+                onClick={() => handleQuantityChange(Math.min(5, quantity + 1))}
+                disabled={quantity >= 5 || realAvailableStock === 0}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  cursor: (quantity >= 5 || realAvailableStock === 0) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: (quantity >= 5 || realAvailableStock === 0) ? 0.3 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (quantity < 5 && realAvailableStock > 0) {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+              >
+                <Plus style={{ width: '16px', height: '16px' }} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '0.75rem' }}>
+            <AnimatedButton
+              text={realAvailableStock < 1 ? t('soldOut') : (cartQuantity >= 5 ? t('maxReached') : (cartQuantity > 0 ? t('addMore') : (added ? t('added') : t('addToCart'))))}
+              onClick={handleAddToCart}
+              disabled={cartQuantity >= 5 || realAvailableStock < 1 || loading}
+              loading={loading}
+              fullWidth
+            />
+          </div>
+
+          {added && (
+            <button
+              onClick={() => window.location.href = '/cart'}
+              className="transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{
+                width: '100%',
+                padding: '0.875rem',
+                backgroundColor: '#000000',
+                color: '#ffffff',
+                fontWeight: 'bold',
+                fontSize: '0.875rem',
+                border: '2px solid #ffd624',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                marginBottom: '0.75rem',
+                textTransform: 'uppercase',
+                boxShadow: '0 4px 12px rgba(255, 214, 36, 0.2)'
+              }}
+            >
+              {t('goToCart')}
+            </button>
+          )}
+
+              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
+                {product.features.map((feature) => (
+                  <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <Check className="w-4 h-4" style={{ color: '#ffd624' }} />
+                    <span style={{ fontSize: '0.875rem', color: '#ffffff' }}>{t(feature)}</span>
+                  </div>
+                ))}
+              </div>
+        </div>
+        </div>
+      </div>
+      </div>
+    </div>,
+    modalRoot
+  );
+}
+

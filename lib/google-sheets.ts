@@ -1,0 +1,129 @@
+import { google } from 'googleapis';
+import path from 'path';
+import { getCache, setCache, clearCache } from './cache';
+
+const SPREADSHEET_ID = '1NZOl7xjQIurs1ILrkZTJqV4QKTCtSMdb2b9TH0xpg_k';
+const CACHE_TTL = 300000; // 5 minutos
+
+type SheetRow = (string | number | boolean)[];
+
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  delay = 1000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+async function getAuthClient() {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: path.join(process.cwd(), 'google-credentials.json'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  return auth.getClient();
+}
+
+export async function appendToSheet(sheetName: string, values: SheetRow[]) {
+  return retryOperation(async () => {
+    const authClient = await getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient as never });
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${sheetName}!A:Z`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values,
+      },
+    });
+
+    clearCache(sheetName);
+  });
+}
+
+export async function readSheet(sheetName: string, range = 'A:Z', useCache = true): Promise<SheetRow[]> {
+  return retryOperation(async () => {
+    const cacheKey = `sheet:${sheetName}:${range}`;
+    
+    if (useCache) {
+      const cached = getCache<SheetRow[]>(cacheKey, CACHE_TTL);
+      if (cached) return cached;
+    }
+
+    const authClient = await getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient as never });
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${sheetName}!${range}`,
+    });
+
+    const data = (response.data.values || []) as SheetRow[];
+    setCache(cacheKey, data);
+    return data;
+  });
+}
+
+export async function updateSheet(sheetName: string, range: string, values: SheetRow[]) {
+  return retryOperation(async () => {
+    const authClient = await getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient as never });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${sheetName}!${range}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values,
+      },
+    });
+
+    clearCache(sheetName);
+  });
+}
+
+export async function batchRead(requests: Array<{ sheetName: string; range?: string }>): Promise<SheetRow[][]> {
+  return retryOperation(async () => {
+    const authClient = await getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient as never });
+
+    const ranges = requests.map(r => `${r.sheetName}!${r.range || 'A:Z'}`);
+    
+    const response = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId: SPREADSHEET_ID,
+      ranges,
+    });
+
+    return (response.data.valueRanges || []).map(vr => (vr.values || []) as SheetRow[]);
+  });
+}
+
+export async function batchUpdate(updates: Array<{ sheetName: string; range: string; values: SheetRow[] }>) {
+  return retryOperation(async () => {
+    const authClient = await getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient as never });
+
+    const data = updates.map(u => ({
+      range: `${u.sheetName}!${u.range}`,
+      values: u.values,
+    }));
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data,
+      },
+    });
+
+    updates.forEach(u => clearCache(u.sheetName));
+  });
+}

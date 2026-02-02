@@ -1,0 +1,29 @@
+{
+  "zones": [
+    {
+      "id": "bogota-chia",
+      "name": "Bogotá y Chía",
+      "cities": ["Bogotá", "Chía"],
+      "cost": 8000,
+      "deliveryDays": "1-2 días hábiles",
+      "deliveryDaysEn": "1-2 business days"
+    },
+    {
+      "id": "cundinamarca",
+      "name": "Cundinamarca",
+      "cities": ["Zipaquirá", "Cajicá", "Sopó", "La Calera", "Facatativá", "Funza", "Madrid", "Mosquera"],
+      "cost": 12000,
+      "deliveryDays": "2-3 días hábiles",
+      "deliveryDaysEn": "2-3 business days"
+    },
+    {
+      "id": "nacional",
+      "name": "Nacional",
+      "cities": [],
+      "cost": 15000,
+      "deliveryDays": "3-5 días hábiles",
+      "deliveryDaysEn": "3-5 business days"
+    }
+  ],
+  "freeShippingThreshold": 100000
+}

@@ -1,0 +1,26 @@
+{
+  "products": [
+    {
+      "id": "prod-1",
+      "name": "Product 1",
+      "edition": "001",
+      "type": "snapback",
+      "description": "",
+      "descriptionEn": "",
+      "available": false,
+      "colors": [],
+      "features": []
+    },
+    {
+      "id": "prod-2",
+      "name": "Product 2",
+      "edition": "001",
+      "type": "snapback",
+      "description": "",
+      "descriptionEn": "",
+      "available": false,
+      "colors": [],
+      "features": []
+    }
+  ]
+}
