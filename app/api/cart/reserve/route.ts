@@ -3,9 +3,15 @@ import { reserveStockInSheets, getAvailableStockFromSheets } from '@/lib/sheets-
 import { getProductsFromSheets } from '@/lib/sheets-products';
 import { clearCache } from '@/lib/cache';
 import { readSheet } from '@/lib/google-sheets';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    if (!rateLimit(`reserve-${ip}`, 20, 60000).success) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
+    }
+
     const { productId, color, quantity, sessionId } = await req.json();
 
     if (!productId || !color || !quantity || !sessionId) {

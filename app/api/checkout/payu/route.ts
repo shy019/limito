@@ -3,9 +3,15 @@ import { generateSignature } from '@/lib/payu';
 import { addOrderToSheets } from '@/lib/sheets-orders';
 import { logger } from '@/lib/logger';
 import { decryptFromTransit } from '@/lib/server-crypto';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    if (!rateLimit(`checkout-${ip}`, 5, 60000).success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { sessionId, customerEmail: encEmail, customerName: encName, customerPhone: encPhone, items, subtotal, shippingCost, discount, total, shippingAddress } = body;
 

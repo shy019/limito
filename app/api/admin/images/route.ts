@@ -11,8 +11,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing required params' }, { status: 400 });
       }
 
-      const folder = `limito/products/${productId}/${colorName.toLowerCase().replace(/\s+/g, '-')}`;
-      const url = await uploadImage(base64Image, folder);
+      const normalizedColor = colorName.toLowerCase().replace(/\s+/g, '-');
+      const folder = 'limito/products';
+      const publicId = `${productId}-${normalizedColor}-${index}`;
+      const url = await uploadImage(base64Image, folder, publicId);
       return NextResponse.json({ success: true, path: url });
     }
 

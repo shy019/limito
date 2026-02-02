@@ -10,21 +10,17 @@ interface BackgroundContextType {
 const BackgroundContext = createContext<BackgroundContextType | undefined>(undefined);
 
 export function BackgroundProvider({ children }: { children: React.ReactNode }) {
-  const [backgroundImage, setBackgroundImage] = useState('/images/bg/background.jpeg');
+  const [backgroundImage, setBackgroundImage] = useState('');
 
   useEffect(() => {
-    const loadImage = () => {
-      fetch('/api/store-config?t=' + Date.now())
-        .then(res => res.json())
-        .then(data => {
-          if (data.config.backgroundImage) {
-            setBackgroundImage(data.config.backgroundImage + '?t=' + Date.now());
-          }
-        })
-        .catch(() => {});
-    };
-
-    loadImage();
+    fetch('/api/store-config?t=' + Date.now())
+      .then(res => res.json())
+      .then(data => {
+        if (data.config?.backgroundImage) {
+          setBackgroundImage(data.config.backgroundImage);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   return (

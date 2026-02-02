@@ -44,7 +44,6 @@ test.describe('Sistema de Reservas - Tests Simplificados', () => {
   test.skip('Fallo después de 3 reintentos muestra error', async ({ page }) => {
     // Skip: Retry logic es interno, difícil de testear en E2E
   });
-});
 
 test.describe('Validación de Límites en Sheets', () => {
   

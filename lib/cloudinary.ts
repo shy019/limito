@@ -9,10 +9,12 @@ function getCloudinary() {
   return cloudinary;
 }
 
-export async function uploadImage(base64Data: string, folder: string = 'limito'): Promise<string> {
+export async function uploadImage(base64Data: string, folder: string = 'limito', publicId?: string): Promise<string> {
   const client = getCloudinary();
   const result = await client.uploader.upload(base64Data, {
     folder,
+    public_id: publicId,
+    overwrite: true,
     resource_type: 'image',
   });
   return result.secure_url;

@@ -93,14 +93,6 @@ export default function PasswordPage() {
 
   if (pageLoading) return <LoadingScreen />;
 
-  const hashPassword = async (text: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(text);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
-
   const encryptData = (text: string): string => {
     const key = Date.now().toString(36);
     const encoded = btoa(text);
@@ -116,24 +108,7 @@ export default function PasswordPage() {
     setError('');
 
     try {
-      // Hash password before sending
-      const hash = await hashPassword(password);
-
-      const adminRes = await fetch('/api/admin/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hash }),
-      });
-
-      if (adminRes.ok) {
-        const adminData = await adminRes.json();
-        if (adminData.access) {
-          window.location.href = '/admin';
-          return;
-        }
-      }
-
-      // For access codes, send encrypted (they need to be compared as-is on server)
+      // Validate access code
       const res = await fetch('/api/promo/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +118,7 @@ export default function PasswordPage() {
       const data = await res.json();
 
       if (data.access) {
-        window.location.href = '/';
+        window.location.href = '/catalog';
       } else {
         setError(t('password.errorIncorrect'));
         setPassword('');

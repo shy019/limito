@@ -61,7 +61,6 @@ export default function AdminPage() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log('Validation response:', data);
         if (data.valid) {
           setAuthenticated(true);
           loadData();
@@ -112,13 +111,17 @@ export default function AdminPage() {
   };
 
   const saveStoreSettings = async () => {
+    if (storeMode === 'password' && !passwordUntil) {
+      setToast({ message: 'Debes seleccionar una fecha para el modo password', type: 'error' });
+      return;
+    }
     try {
       await fetch('/api/store-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: storeMode,
-          passwordUntil: passwordUntil || null,
+          passwordUntil: storeMode === 'password' ? passwordUntil : null,
         }),
       });
       await loadStoreConfig();
@@ -154,15 +157,27 @@ export default function AdminPage() {
   };
 
   const cancelEdit = () => {
-    const isNew = !products.find(p => p.id === editForm.id && p.name !== 'Nuevo Producto');
-    if (isNew && editForm.id) {
-      setProducts(products.filter(p => p.id !== editForm.id));
-    }
     setEditingProduct(null);
     setEditForm({});
   };
 
   const saveProduct = async () => {
+    // Validar que tenga nombre
+    if (!editForm.name?.trim()) {
+      setToast({ message: 'El producto debe tener un nombre', type: 'error' });
+      return;
+    }
+
+    // Validar nombre de producto duplicado
+    const duplicateName = products.find(p => 
+      p.id !== editForm.id && 
+      p.name.toLowerCase().trim() === editForm.name?.toLowerCase().trim()
+    );
+    if (duplicateName) {
+      setToast({ message: `Ya existe un producto con el nombre: ${editForm.name}`, type: 'error' });
+      return;
+    }
+
     // Validar nombres de color duplicados
     if (Array.isArray(editForm.colors)) {
       const colorNames = editForm.colors.map(c => c.name.toLowerCase().trim());
@@ -174,7 +189,7 @@ export default function AdminPage() {
     }
 
     try {
-      const isNew = !products.find(p => p.id === editForm.id);
+      const isNew = editForm.id?.startsWith('limito-new-') || !products.find(p => p.id === editForm.id);
 
       const saveRes = await fetch('/api/admin/products', {
         method: isNew ? 'POST' : 'PUT',
@@ -483,11 +498,11 @@ export default function AdminPage() {
                 onClick={() => {
                   const newProduct = {
                     id: `limito-new-${Date.now()}`,
-                    name: 'Nuevo Producto',
+                    name: '',
                     edition: '001',
                     type: 'snapback',
-                    description: 'Descripción del producto',
-                    descriptionEn: 'Product description',
+                    description: '',
+                    descriptionEn: '',
                     available: true,
                     colors: [{
                       name: 'Negro',
@@ -498,7 +513,6 @@ export default function AdminPage() {
                     }],
                     features: ['Edición limitada', 'Logo bordado', 'Ajustable']
                   };
-                  setProducts([...products, newProduct]);
                   setEditingProduct(newProduct.id);
                   setEditForm(newProduct);
                 }}
@@ -507,7 +521,10 @@ export default function AdminPage() {
                 + Añadir Producto
               </button>
             </div>
-            {products.map((product) => (
+            {(editingProduct?.startsWith('limito-new-') 
+              ? [editForm as Product, ...products.filter(p => p.id !== editForm.id)] 
+              : products
+            ).map((product) => (
               <div key={product.id} className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg">
                 {editingProduct === product.id ? (
                   <div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { logger } from '@/lib/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'limito-jwt-secret-2024';
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {

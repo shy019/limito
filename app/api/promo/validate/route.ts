@@ -4,7 +4,7 @@ import { getPromoCodesFromSheets } from '@/lib/sheets-promo';
 import { rateLimit } from '@/lib/rate-limit';
 import { decryptFromTransit } from '@/lib/server-crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'limito-jwt-secret-2024';
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {

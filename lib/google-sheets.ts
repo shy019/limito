@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { getCache, setCache, clearCache } from './cache';
 
-const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID || '1NZOl7xjQIurs1ILrkZTJqV4QKTCtSMdb2b9TH0xpg_k';
+const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID!;
 const CACHE_TTL = 300000; // 5 minutos
 
 type SheetRow = (string | number | boolean)[];

@@ -1,9 +1,9 @@
-import { readSheet, updateSheet } from './google-sheets';
+import { readSheet, updateSheet, appendToSheet } from './google-sheets';
 import { clearCache } from './cache';
 
 export async function getConfigFromSheets() {
   try {
-    const rows = await readSheet('config', 'A2:B10');
+    const rows = await readSheet('config', 'A2:B10', false);
     const config: Record<string, string> = {};
     
     rows.forEach((row: any[]) => {
@@ -25,14 +25,16 @@ export async function saveConfigToSheets(key: string, value: string) {
     
     rows.forEach((row: any[], index: number) => {
       if (row[0] === key) {
-        rowIndex = index + 2; // +2 because A2 is row 2
+        rowIndex = index + 2;
       }
     });
     
     if (rowIndex > 0) {
       await updateSheet('config', `B${rowIndex}`, [[value]]);
-      clearCache('config');
+    } else {
+      await appendToSheet('config', [[key, value]]);
     }
+    clearCache('config');
     
     return true;
   } catch (error) {
