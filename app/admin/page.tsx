@@ -357,18 +357,25 @@ export default function AdminPage() {
     setError('');
 
     try {
+      // Hash password on client side before sending
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
       const res = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ hash }),
       });
 
-      const data = await res.json();
+      const resData = await res.json();
 
-      if (data.access) {
+      if (resData.access) {
         setAuthenticated(true);
-        const res = await fetch('/api/admin/products/all');
-        const prodData = await res.json();
+        const prodRes = await fetch('/api/admin/products/all');
+        const prodData = await prodRes.json();
         setProducts(prodData.products);
       } else {
         setError('Contraseña incorrecta');
