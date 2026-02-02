@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getPromoCodesFromSheets } from '@/lib/sheets-promo';
 import { rateLimit } from '@/lib/rate-limit';
+import { decryptFromTransit } from '@/lib/server-crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'limito-jwt-secret-2024';
 
@@ -17,7 +18,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { password } = await req.json();
+    const { code } = await req.json();
+    
+    // Decrypt the code
+    const password = decryptFromTransit(code);
 
     const result = await getPromoCodesFromSheets();
     

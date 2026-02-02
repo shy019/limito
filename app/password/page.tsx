@@ -60,6 +60,13 @@ export default function PasswordPage() {
       setLocale(localeCookie.split('=')[1]);
     }
 
+    // Check if user already has valid access token
+    const accessCookie = cookies.find(c => c.startsWith('limito_access='));
+    if (accessCookie) {
+      window.location.replace('/catalog');
+      return;
+    }
+
     fetch('/api/store-config')
       .then(res => res.json())
       .then(data => {
@@ -86,16 +93,36 @@ export default function PasswordPage() {
 
   if (pageLoading) return <LoadingScreen />;
 
+  const hashPassword = async (text: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const encryptData = (text: string): string => {
+    const key = Date.now().toString(36);
+    const encoded = btoa(text);
+    const mixed = encoded.split('').map((char, i) => 
+      String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+    ).join('');
+    return `${key}:${btoa(mixed)}`;
+  };
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingPassword(true);
     setError('');
 
     try {
+      // Hash password before sending
+      const hash = await hashPassword(password);
+
       const adminRes = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ hash }),
       });
 
       if (adminRes.ok) {
@@ -106,10 +133,11 @@ export default function PasswordPage() {
         }
       }
 
+      // For access codes, send encrypted (they need to be compared as-is on server)
       const res = await fetch('/api/promo/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ code: encryptData(password) }),
       });
 
       const data = await res.json();
@@ -120,7 +148,7 @@ export default function PasswordPage() {
         setError(t('password.errorIncorrect'));
         setPassword('');
       }
-    } catch (err) {
+    } catch {
       setError(t('password.errorConnection'));
     } finally {
       setSubmittingPassword(false);
@@ -140,10 +168,11 @@ export default function PasswordPage() {
     }
 
     try {
+      // Encrypt phone before sending
       const res = await fetch('/api/phones/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone }),
+        body: JSON.stringify({ phone: encryptData(fullPhone) }),
       });
 
       if (res.ok) {
@@ -153,8 +182,7 @@ export default function PasswordPage() {
       } else {
         setToast({ message: t('newsletter.error'), type: 'error' });
       }
-    } catch (err) {
-      console.error('Phone error:', err);
+    } catch {
       setToast({ message: t('password.errorConnection'), type: 'error' });
     } finally {
       setSubmittingPhone(false);

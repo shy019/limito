@@ -1,49 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_ROUTES = [
-  '/contact',
-  '/contacto', 
-  '/policies',
-  '/politicas',
-  '/password',
-  '/soldout',
-  '/api/',
-  '/_next/',
-  '/favicon.ico',
-  '/images/',
-];
-
-const PROTECTED_ROUTES = [
-  '/catalogo',
-  '/catalog',
-  '/producto',
-  '/product',
-  '/checkout',
-  '/cart',
-  '/carrito',
-];
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Admin routes bypass all checks
+  // Admin routes always accessible
   if (pathname.startsWith('/admin')) {
     return NextResponse.next();
   }
   
-  // Skip middleware for static assets and API routes
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+  // Skip for static/api
+  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/images/')) {
     return NextResponse.next();
   }
   
-  // Get store mode from cookie, env var, or default to 'password'
   const storeMode = request.cookies.get('store_mode')?.value || process.env.STORE_MODE || 'password';
   const accessToken = request.cookies.get('limito_access')?.value;
-  const isHomePage = pathname === '/';
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
   
-  // Handle soldout mode
+  // SOLDOUT: everything redirects to /soldout
   if (storeMode === 'soldout') {
     if (pathname !== '/soldout') {
       return NextResponse.redirect(new URL('/soldout', request.url));
@@ -51,19 +25,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Handle password mode
-  if (storeMode === 'password') {
-    if (!accessToken && (isProtectedRoute || isHomePage)) {
-      return NextResponse.redirect(new URL('/password', request.url));
-    }
-    if (accessToken && isHomePage) {
+  // ACTIVE: free access to catalog, no password/soldout pages
+  if (storeMode === 'active') {
+    if (pathname === '/' || pathname === '/password' || pathname === '/soldout') {
       return NextResponse.redirect(new URL('/catalog', request.url));
     }
+    return NextResponse.next();
   }
   
-  // Handle active mode
-  if (storeMode === 'active' && isHomePage) {
+  // PASSWORD: requires token for protected routes
+  const protectedRoutes = ['/catalog', '/catalogo', '/product', '/producto', '/checkout', '/cart', '/carrito'];
+  const isProtected = pathname === '/' || protectedRoutes.some(r => pathname.startsWith(r));
+  
+  if (!accessToken && isProtected) {
+    return NextResponse.redirect(new URL('/password', request.url));
+  }
+  if (accessToken && pathname === '/password') {
     return NextResponse.redirect(new URL('/catalog', request.url));
+  }
+  if (pathname === '/soldout') {
+    return NextResponse.redirect(new URL('/password', request.url));
   }
   
   return NextResponse.next();

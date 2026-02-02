@@ -2,15 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateSignature } from '@/lib/payu';
 import { addOrderToSheets } from '@/lib/sheets-orders';
 import { logger } from '@/lib/logger';
+import { decryptFromTransit } from '@/lib/server-crypto';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { sessionId, customerEmail, customerName, customerPhone, items, subtotal, shippingCost, discount, total, shippingAddress } = body;
+    const { sessionId, customerEmail: encEmail, customerName: encName, customerPhone: encPhone, items, subtotal, shippingCost, discount, total, shippingAddress } = body;
 
-    if (!sessionId || !customerEmail || !customerName || !customerPhone || !items || !total) {
+    if (!sessionId || !encEmail || !encName || !encPhone || !items || !total) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    // Decrypt customer data
+    const customerEmail = decryptFromTransit(encEmail);
+    const customerName = decryptFromTransit(encName);
+    const customerPhone = decryptFromTransit(encPhone);
 
     const orderId = `LIMITO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const tax = Math.round(total * 0.19);

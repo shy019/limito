@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Product } from '@/lib/products';
 import { revalidatePath } from 'next/cache';
 import { updateProductInSheets, deleteProductFromSheets, addProductToSheets } from '@/lib/sheets-products';
-import { autoTranslate } from '@/lib/auto-translate';
-import { deleteProductImages } from '@/lib/image-processor';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,11 +10,6 @@ export async function POST(request: NextRequest) {
     if (!newProduct.descriptionEn) {
       newProduct.descriptionEn = newProduct.description;
     }
-    
-    const keysToTranslate: string[] = [];
-    newProduct.colors.forEach(color => keysToTranslate.push(color.name));
-    newProduct.features.forEach(feature => keysToTranslate.push(feature));
-    autoTranslate(keysToTranslate);
     
     const result = await addProductToSheets(newProduct);
     
@@ -29,7 +22,7 @@ export async function POST(request: NextRequest) {
     revalidatePath('/admin', 'page');
     
     return NextResponse.json({ success: true, product: newProduct });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Create failed' }, { status: 500 });
   }
 }
@@ -42,11 +35,6 @@ export async function PUT(request: NextRequest) {
       updatedProduct.descriptionEn = updatedProduct.description;
     }
     
-    const keysToTranslate: string[] = [];
-    updatedProduct.colors.forEach(color => keysToTranslate.push(color.name));
-    updatedProduct.features.forEach(feature => keysToTranslate.push(feature));
-    autoTranslate(keysToTranslate);
-    
     const result = await updateProductInSheets(updatedProduct);
     
     if (!result.success) {
@@ -58,7 +46,7 @@ export async function PUT(request: NextRequest) {
     revalidatePath('/admin', 'page');
     
     return NextResponse.json({ success: true, product: updatedProduct });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 }
@@ -67,7 +55,6 @@ export async function DELETE(request: NextRequest) {
   try {
     const { id } = await request.json();
     
-    await deleteProductImages(id);
     const result = await deleteProductFromSheets(id);
     
     if (!result.success) {
@@ -79,7 +66,7 @@ export async function DELETE(request: NextRequest) {
     revalidatePath('/admin', 'page');
     
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
   }
 }

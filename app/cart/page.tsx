@@ -132,6 +132,15 @@ export default function CarritoPage() {
     }
   };
 
+  const encryptData = (text: string): string => {
+    const key = Date.now().toString(36);
+    const encoded = btoa(text);
+    const mixed = encoded.split('').map((char, i) => 
+      String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+    ).join('');
+    return `${key}:${btoa(mixed)}`;
+  };
+
   const handleCheckout = async () => {
     if (!customerEmail || !customerName || !customerPhone) {
       setToast({ message: 'Completa tus datos', type: 'error' });
@@ -148,9 +157,9 @@ export default function CarritoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          customerEmail,
-          customerName,
-          customerPhone,
+          customerEmail: encryptData(customerEmail),
+          customerName: encryptData(customerName),
+          customerPhone: encryptData(customerPhone),
           items: cartItems,
           subtotal,
           shippingCost,

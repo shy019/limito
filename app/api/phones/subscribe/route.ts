@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { appendToSheet, readSheet } from '@/lib/google-sheets';
+import { decryptFromTransit } from '@/lib/server-crypto';
 
 export async function POST(request: Request) {
   try {
-    const { phone } = await request.json();
+    const { phone: encryptedPhone } = await request.json();
+    
+    // Decrypt phone number
+    const phone = decryptFromTransit(encryptedPhone);
 
     if (!phone || phone.length < 12) {
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
@@ -12,7 +16,6 @@ export async function POST(request: Request) {
     // Verificar si la hoja tiene encabezados
     const existingData = await readSheet('phones', 'A:B', false);
     if (!existingData || existingData.length === 0) {
-      // Crear encabezados si no existen
       await appendToSheet('phones', [['phone', 'timestamp']]);
     }
 

@@ -1,6 +1,11 @@
 import { readSheet, updateSheet } from './google-sheets';
-import { syncToJSON, SyncResult } from './sync';
 import type { PromoCode } from '@/types/admin';
+
+interface SyncResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 export async function getPromoCodesFromSheets(): Promise<SyncResult<PromoCode[]>> {
   try {
@@ -16,7 +21,6 @@ export async function getPromoCodesFromSheets(): Promise<SyncResult<PromoCode[]>
       currentUses: parseInt(String(row[6])) || 0,
     }));
     
-    await syncToJSON('promo-codes.json', { promoCodes: codes });
     return { success: true, data: codes };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to read promo codes' };

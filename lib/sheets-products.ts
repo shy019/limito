@@ -1,6 +1,11 @@
 import { readSheet, updateSheet, appendToSheet } from './google-sheets';
 import { clearCache } from './cache';
-import { syncToJSON, SyncResult } from './sync';
+
+interface SyncResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 interface ProductColor {
   name: string;
@@ -51,7 +56,6 @@ export async function getProductsFromSheets(useCache: boolean = true): Promise<S
         };
       });
     
-    await syncToJSON('products.json', { products });
     return { success: true, data: products };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };

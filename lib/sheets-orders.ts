@@ -1,6 +1,11 @@
 import { readSheet, appendToSheet, updateSheet } from './google-sheets';
 import { clearCache } from './cache';
-import { syncToJSON, SyncResult } from './sync';
+
+interface SyncResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 interface Order {
   id: string;
@@ -38,7 +43,6 @@ export async function getOrdersFromSheets(): Promise<SyncResult<Order[]>> {
       paymentMethod: row[12] || 'payu',
     }));
     
-    await syncToJSON('orders.json', { orders });
     return { success: true, data: orders };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to read orders' };
