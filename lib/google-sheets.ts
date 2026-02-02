@@ -1,8 +1,7 @@
 import { google } from 'googleapis';
-import path from 'path';
 import { getCache, setCache, clearCache } from './cache';
 
-const SPREADSHEET_ID = '1NZOl7xjQIurs1ILrkZTJqV4QKTCtSMdb2b9TH0xpg_k';
+const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID || '1NZOl7xjQIurs1ILrkZTJqV4QKTCtSMdb2b9TH0xpg_k';
 const CACHE_TTL = 300000; // 5 minutos
 
 type SheetRow = (string | number | boolean)[];
@@ -24,6 +23,18 @@ async function retryOperation<T>(
 }
 
 async function getAuthClient() {
+  // Try env var first (for Vercel), then fall back to file (for local dev)
+  if (process.env.GOOGLE_CREDENTIALS) {
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    return auth.getClient();
+  }
+  
+  // Local development with file
+  const path = await import('path');
   const auth = new google.auth.GoogleAuth({
     keyFile: path.join(process.cwd(), 'google-credentials.json'),
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
