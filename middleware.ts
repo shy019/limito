@@ -37,8 +37,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Get store mode from cookie or default to 'active'
-  const storeMode = request.cookies.get('store_mode')?.value || 'active';
+  // Get store mode from cookie, env var, or default to 'password'
+  const storeMode = request.cookies.get('store_mode')?.value || process.env.STORE_MODE || 'password';
   const accessToken = request.cookies.get('limito_access')?.value;
   const isHomePage = pathname === '/';
   const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
