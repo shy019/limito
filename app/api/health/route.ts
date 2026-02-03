@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { readSheet } from '@/lib/google-sheets';
+import { getProductsFromTurso } from '@/lib/turso-products-v2';
 
 export async function GET() {
   try {
-    await readSheet('products', 'A1:A1', false);
+    await getProductsFromTurso();
     
     return NextResponse.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       services: {
-        googleSheets: 'ok',
+        turso: 'ok',
       }
     });
   } catch (error) {

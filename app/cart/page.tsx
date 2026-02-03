@@ -10,11 +10,15 @@ import { formatPrice } from '@/lib/products';
 import type { ShippingZone } from '@/lib/shipping';
 import { calculateShipping } from '@/lib/shipping';
 import Toast from '@/components/Toast';
+import SessionMonitor from '@/components/SessionMonitor';
 import LoadingScreen from '@/components/LoadingScreen';
 import Header from '@/components/Header';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
+import { useStoreConfig } from '@/hooks/useStoreConfig';
+import { apiCache } from '@/lib/api-cache';
 
 export default function CarritoPage() {
+  const { config, loading: configLoading } = useStoreConfig();
   const [items, setItems] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
@@ -30,7 +34,6 @@ export default function CarritoPage() {
   const [city, setCity] = useState('Bogotá');
   const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
   const [locale, setLocale] = useState('es');
-  const [pageLoading, setPageLoading] = useState(true);
   const [cartLoading, setCartLoading] = useState(true);
   const t = useTranslations('cart');
   const tCatalog = useTranslations('catalog');
@@ -42,35 +45,27 @@ export default function CarritoPage() {
   );
 
   useEffect(() => {
-    fetch('/api/store-config')
-      .then(res => res.json())
+    if (config?.mode === 'soldout') {
+      window.location.href = '/soldout';
+      return;
+    }
+
+    setMounted(true);
+    const cookies = document.cookie.split('; ');
+    const localeCookie = cookies.find(c => c.startsWith('NEXT_LOCALE='));
+    if (localeCookie) {
+      setLocale(localeCookie.split('=')[1]);
+    }
+
+    // Usar apiCache para checkout
+    apiCache.fetch<{ zones: ShippingZone[] }>('/api/checkout', undefined, 300000)
       .then(data => {
-        const mode = data.config.mode;
-
-        if (mode === 'soldout') {
-          window.location.href = '/soldout';
-          return;
+        if (data.zones) {
+          setShippingZones(data.zones);
         }
-
-        setMounted(true);
-        const cookies = document.cookie.split('; ');
-        const localeCookie = cookies.find(c => c.startsWith('NEXT_LOCALE='));
-        if (localeCookie) {
-          setLocale(localeCookie.split('=')[1]);
-        }
-
-        fetch('/api/checkout')
-          .then(res => res.json())
-          .then(data => {
-            if (data.zones) {
-              setShippingZones(data.zones);
-            }
-            setTimeout(() => setPageLoading(false), 100);
-          })
-          .catch(() => setTimeout(() => setPageLoading(false), 100));
       })
-      .catch(() => setTimeout(() => setPageLoading(false), 100));
-  }, []);
+      .catch(() => {});
+  }, [config]);
 
   useEffect(() => {
     const syncCart = async () => {
@@ -174,7 +169,7 @@ export default function CarritoPage() {
 
   const total = subtotal + shippingCost - discount;
 
-  if (pageLoading || cartLoading) return <LoadingScreen />;
+  if (configLoading || cartLoading) return <LoadingScreen />;
 
   if (items.length === 0) {
     return (
@@ -456,6 +451,7 @@ export default function CarritoPage() {
         </div>
       </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <SessionMonitor />
 
       {/* Modal de confirmación */}
       {mounted && showClearModal && createPortal(

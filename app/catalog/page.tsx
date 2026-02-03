@@ -14,93 +14,48 @@ import Header from '@/components/Header';
 import ResponsiveProductImage from '@/components/ResponsiveProductImage';
 import AnimatedButton from '@/components/AnimatedButton';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
+import SessionMonitor from '@/components/SessionMonitor';
+import { useProducts } from '@/hooks/useProducts';
+import { useStoreConfig } from '@/hooks/useStoreConfig';
+import { useAvailableStock } from '@/hooks/useAvailableStock';
 
 export default function CatalogoPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products, loading: productsLoading, loadProducts } = useProducts();
+  const { config, loading: configLoading } = useStoreConfig();
   const [locale, setLocale] = useState('es');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
   const t = useTranslations('catalog');
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Recargar productos desde API
-  const loadProducts = async () => {
-    try {
-      const res = await fetch('/api/products?t=' + Date.now(), {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      const data = await res.json();
-      setProducts(data.products || []);
-    } catch {}
-  };
-
   useEffect(() => {
-    Promise.all([
-      fetch('/api/store-config').then(res => res.json()),
-      fetch('/api/products?t=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }).then(res => res.json())
-    ])
-      .then(([configData, productsData]) => {
-        const mode = configData.config.mode;
+    if (config?.mode === 'soldout') {
+      window.location.href = '/soldout';
+      return;
+    }
 
-        if (mode === 'soldout') {
-          window.location.href = '/soldout';
-          return;
-        }
+    if (typeof document !== 'undefined') {
+      const cookieLocale = document.cookie.split('; ').find(row => row.startsWith('NEXT_LOCALE='))?.split('=')[1] || 'es';
+      setLocale(cookieLocale);
+    }
+    setCartCount(cart.getCount());
 
-        setProducts(productsData.products || []);
+    const handleCartUpdate = () => {
+      setCartCount(cart.getCount());
+      // NO recargar productos, solo actualizar contador
+    };
+    window.addEventListener('cart-updated', handleCartUpdate);
 
-        if (typeof document !== 'undefined') {
-          const cookieLocale = document.cookie.split('; ').find(row => row.startsWith('NEXT_LOCALE='))?.split('=')[1] || 'es';
-          setLocale(cookieLocale);
-        }
-        setCartCount(cart.getCount());
-
-        // Recrear reservas del carrito
-        const items = cart.get();
-        const sessionId = sessionStorage.getItem('limito_session_id');
-        if (sessionId && items.length > 0) {
-          items.forEach(item => {
-            if (item.productId && item.color && item.quantity) {
-              fetch('/api/cart/reserve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  productId: item.productId,
-                  color: item.color,
-                  quantity: item.quantity,
-                  sessionId,
-                }),
-              }).catch(() => {});
-            }
-          });
-        }
-
-        const handleCartUpdate = () => {
-          setCartCount(cart.getCount());
-          loadProducts();
-        };
-        window.addEventListener('cart-updated', handleCartUpdate);
-
-        loadProducts();
-        const timer = setTimeout(() => setLoading(false), 100);
-
-        return () => {
-          window.removeEventListener('cart-updated', handleCartUpdate);
-          clearTimeout(timer);
-        };
-      })
-      .catch(() => {
-        setTimeout(() => setLoading(false), 100);
-      });
-  }, []);
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate);
+    };
+  }, [config, loadProducts]);
 
   useEffect(() => {
     const productId = searchParams.get('product');
-    if (productId) {
+    if (productId && products.length > 0) {
       const product = products.find(p => p.id === productId);
       if (product) {
         setTimeout(() => setSelectedProduct(product), 0);
@@ -116,7 +71,7 @@ export default function CatalogoPage() {
     window.location.href = productParam ? `/?product=${productParam}` : '/';
   };
 
-  if (loading) {
+  if (configLoading || productsLoading) {
     return <LoadingScreen />;
   }
 
@@ -167,6 +122,7 @@ export default function CatalogoPage() {
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <SessionMonitor />
     </div>
   );
 }
@@ -253,7 +209,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
   const [added, setAdded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [cartQuantity, setCartQuantity] = useState(0);
-  const [availableStock, setAvailableStock] = useState<Record<string, number>>({});
+  const { stockMap: availableStock, refetch: refetchStock } = useAvailableStock(product.id);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -262,81 +218,33 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     setTimeout(() => setMounted(true), 0);
     document.body.style.overflow = 'hidden';
 
-    const fetchStock = () => {
-      fetch(`/api/products/available-stock?productId=${product.id}&t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      })
-        .then(res => res.json())
-        .then(data => {
-          const stockMap: Record<string, number> = {};
-          data.availableStock.forEach((item: { name: string; availableStock: number }) => {
-            stockMap[item.name] = item.availableStock;
-          });
-          setAvailableStock(stockMap);
-        })
-        .catch(() => {});
-    };
-
-    fetchStock();
-
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [product.id]);
 
   useEffect(() => {
-    setTimeout(() => {
-      setAdded(false);
-      const items = cart.get();
-      const existing = items.find(
-        i => i.productId === product.id && i.color === product.colors[selectedColor].name
-      );
-      setCartQuantity(existing ? existing.quantity : 0);
-
-      if (existing && existing.quantity > 0) {
-        setAdded(true);
-      }
-    }, 0);
+    const items = cart.get();
+    const existing = items.find(
+      i => i.productId === product.id && i.color === product.colors[selectedColor].name
+    );
+    setCartQuantity(existing ? existing.quantity : 0);
+    setAdded(existing ? existing.quantity > 0 : false);
   }, [selectedColor, product.id, product.colors]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const updateCartQuantity = () => {
-      if (cancelled) return;
+    const handleCartUpdate = () => {
       const items = cart.get();
       const existing = items.find(
         i => i.productId === product.id && i.color === product.colors[selectedColor].name
       );
       setCartQuantity(existing ? existing.quantity : 0);
-    };
-
-    const handleCartUpdate = () => {
-      if (cancelled) return;
-
-      fetch(`/api/products/available-stock?productId=${product.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!cancelled) {
-            const stockMap: Record<string, number> = {};
-            data.availableStock.forEach((item: { name: string; availableStock: number }) => {
-              stockMap[item.name] = item.availableStock;
-            });
-            setAvailableStock(stockMap);
-          }
-        })
-        .catch(() => {});
-      updateCartQuantity();
+      refetchStock(product.id); // Refetch stock después de actualizar carrito
     };
 
     window.addEventListener('cart-updated', handleCartUpdate);
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener('cart-updated', handleCartUpdate);
-    };
-  }, [product.id, product.colors, selectedColor]);
+    return () => window.removeEventListener('cart-updated', handleCartUpdate);
+  }, [product.id, selectedColor, product.colors, refetchStock]);
 
   const currentColor = product.colors[selectedColor];
   const images = currentColor.images.filter(img => img && img.trim() !== '');
@@ -390,22 +298,9 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     setAdded(true);
     setCartQuantity(newTotal);
     setToast({ message: t('productAdded'), type: 'success' });
-
-    // Update stock after successful add
-    fetch(`/api/products/available-stock?productId=${product.id}&t=${timestamp}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' }
-    })
-      .then(res => res.json())
-      .then(data => {
-        const stockMap: Record<string, number> = {};
-        data.availableStock.forEach((item: { name: string; availableStock: number }) => {
-          stockMap[item.name] = item.availableStock;
-        });
-        setAvailableStock(stockMap);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    setLoading(false);
+    
+    // NO llamar refetchStock aquí - el evento cart-updated lo hará
   };
 
   const handleQuantityChange = (newQty: number) => {
@@ -645,7 +540,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                 {product.features.map((feature) => (
                   <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                     <Check className="w-4 h-4" style={{ color: '#ffd624' }} />
-                    <span style={{ fontSize: '0.875rem', color: '#ffffff' }}>{t(feature)}</span>
+                    <span style={{ fontSize: '0.875rem', color: '#ffffff' }}>{feature}</span>
                   </div>
                 ))}
               </div>

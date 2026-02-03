@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { getPromoCodesFromSheets } from '@/lib/sheets-promo';
+import { createAccessToken } from '@/lib/auth';
+import { getPromoCodesFromTurso } from '@/lib/turso-products-v2';
 import { rateLimit } from '@/lib/rate-limit';
 import { decryptFromTransit } from '@/lib/server-crypto';
-
-const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Decrypt the code
     const password = decryptFromTransit(code);
 
-    const result = await getPromoCodesFromSheets();
+    const result = await getPromoCodesFromTurso();
     
     if (!result.success || !result.data || result.data.length === 0) {
       return NextResponse.json({ access: false });
@@ -47,14 +45,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ access: false });
     }
 
-    const token = jwt.sign({ access: true, code: promo.code }, JWT_SECRET, { expiresIn: '6h' });
+    // Token expires in 5 minutes
+    const token = createAccessToken();
     
     const response = NextResponse.json({ access: true, token });
     response.cookies.set('limito_access', token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 6,
+      maxAge: 5 * 60, // 5 minutes
       path: '/'
     });
     

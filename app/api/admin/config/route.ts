@@ -1,7 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { getConfigFromSheets, saveConfigToSheets } from '@/lib/sheets-config';
-import { readSheet, updateSheet } from '@/lib/google-sheets';
-import { getPromoCodesFromSheets } from '@/lib/sheets-promo';
+import { getSettingsFromTurso, updateSettingInTurso, getPromoCodesFromTurso, addPromoCodeToTurso } from '@/lib/turso-products-v2';
 import bcrypt from 'bcryptjs';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/rate-limit';
@@ -23,11 +21,11 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action');
 
     if (action === 'get_promo_codes') {
-      const promoCodes = await getPromoCodesFromSheets();
-      return NextResponse.json({ codes: promoCodes });
+      const result = await getPromoCodesFromTurso();
+      return NextResponse.json({ codes: result });
     }
 
-    const config = await getConfigFromSheets();
+    const config = await getSettingsFromTurso();
     
     return NextResponse.json({
       admin_password: config?.admin_password || '',
@@ -56,13 +54,13 @@ export async function POST(req: NextRequest) {
     
     if (admin_password) {
       const hashed = await bcrypt.hash(admin_password, 10);
-      await saveConfigToSheets('admin_password', hashed);
+      await updateSettingInTurso('admin_password', hashed, 'admin');
       logger.info('Admin password updated');
     }
     
     if (promo_password) {
       const hashed = await bcrypt.hash(promo_password, 10);
-      await saveConfigToSheets('promo_password', hashed);
+      await updateSettingInTurso('promo_password', hashed, 'admin');
       logger.info('Promo password updated');
     }
 
@@ -77,20 +75,12 @@ export async function POST(req: NextRequest) {
         currentUses: 0,
       };
 
-      const promoRows = await readSheet('promo_codes', 'A2:G1000');
-      const nextRow = promoRows.length + 2;
-      await updateSheet('promo_codes', `A${nextRow}:G${nextRow}`, [[
-        newCode.code || '',
-        newCode.type || '',
-        newCode.value || 0,
-        newCode.active,
-        newCode.expiresAt || '',
-        newCode.maxUses || '',
-        newCode.currentUses || 0
-      ]]);
+      const result = await addPromoCodeToTurso(newCode);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 500 });
+      }
 
-      await getPromoCodesFromSheets();
-      logger.info(`Code ${code} added to Sheets`);
+      logger.info(`Code ${code} added to Turso`);
     }
     
     return NextResponse.json({ success: true });

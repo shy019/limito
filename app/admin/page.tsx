@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Package, LogOut, Upload, Key, Tag, CheckCircle, XCircle, Calendar, Percent, DollarSign, Menu } from 'lucide-react';
 import type { Product } from '@/lib/products';
@@ -11,6 +11,7 @@ import Toast from '@/components/Toast';
 import StatsCards from '@/components/admin/StatsCards';
 import OrderCard from '@/components/admin/OrderCard';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdvancedSettings from '@/components/admin/AdvancedSettings';
 import { useBackground } from '@/contexts/BackgroundContext';
 
 export default function AdminPage() {
@@ -22,7 +23,7 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats>({ totalOrders: 0, totalRevenue: 0, pendingOrders: 0 });
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'config' | 'access' | 'promos'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'config' | 'access' | 'promos' | 'settings'>('orders');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
 
@@ -39,8 +40,12 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
 
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
   const loadData = async () => {
+    if (isLoadingData) return; // Prevenir llamadas duplicadas
     try {
+      setIsLoadingData(true);
       const res = await fetch('/api/admin/products/all?t=' + Date.now(), {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' }
@@ -51,27 +56,45 @@ export default function AdminPage() {
       await loadStoreConfig();
     } catch {
       setToast({ message: 'Error al cargar datos', type: 'error' });
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
+  const hasValidated = useRef(false);
+
   useEffect(() => {
-    fetch('/api/admin/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then(res => res.json())
-      .then(data => {
+    if (hasValidated.current) return; // Prevenir segunda ejecución
+    hasValidated.current = true;
+    
+    const validate = async () => {
+      try {
+        const res = await fetch('/api/admin/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
         if (data.valid) {
           setAuthenticated(true);
           loadData();
         }
         setTimeout(() => setPageLoading(false), 100);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Validation error:', err);
         setTimeout(() => setPageLoading(false), 100);
-      });
+      }
+    };
+    
+    validate();
   }, []);
+
+  // Recargar códigos cuando cambies a esas tabs
+  useEffect(() => {
+    if (authenticated && (activeTab === 'access' || activeTab === 'promos')) {
+      loadStoreConfig();
+    }
+  }, [activeTab, authenticated]);
 
   const loadOrders = async () => {
     try {
@@ -101,7 +124,7 @@ export default function AdminPage() {
       const promoRes = await fetch('/api/admin/config?action=get_promo_codes');
       if (promoRes.ok) {
         const promoData = await promoRes.json();
-        const allCodes = Array.isArray(promoData.codes) ? promoData.codes : [];
+        const allCodes = promoData.codes?.data || promoData.codes || [];
         setAccessCodes(allCodes.filter((c: PromoCode) => c.type === 'access'));
         setPromoCodes(allCodes.filter((c: PromoCode) => c.type !== 'access'));
       }
@@ -115,6 +138,20 @@ export default function AdminPage() {
       setToast({ message: 'Debes seleccionar una fecha para el modo password', type: 'error' });
       return;
     }
+    
+    // Confirmación para cambios críticos
+    if (storeMode === 'soldout') {
+      if (!confirm('⚠️ ¿Estás seguro de cambiar a modo AGOTADO?\n\nLos usuarios verán la página de agotado y no podrán comprar.')) {
+        return;
+      }
+    }
+    
+    if (storeMode === 'maintenance') {
+      if (!confirm('⚠️ ¿Estás seguro de activar modo MANTENIMIENTO?\n\nLos usuarios no podrán acceder a la tienda.')) {
+        return;
+      }
+    }
+    
     try {
       await fetch('/api/store-config', {
         method: 'POST',
@@ -168,6 +205,24 @@ export default function AdminPage() {
       return;
     }
 
+    // Validar que tenga al menos un color
+    if (!Array.isArray(editForm.colors) || editForm.colors.length === 0) {
+      setToast({ message: 'El producto debe tener al menos un color', type: 'error' });
+      return;
+    }
+
+    // Validar que cada color tenga precio y stock
+    for (const color of editForm.colors) {
+      if (!color.price || color.price <= 0) {
+        setToast({ message: `El color "${color.name}" debe tener un precio válido`, type: 'error' });
+        return;
+      }
+      if (color.stock === undefined || color.stock < 0) {
+        setToast({ message: `El color "${color.name}" debe tener stock definido (puede ser 0)`, type: 'error' });
+        return;
+      }
+    }
+
     // Validar nombre de producto duplicado
     const duplicateName = products.find(p => 
       p.id !== editForm.id && 
@@ -189,7 +244,8 @@ export default function AdminPage() {
     }
 
     try {
-      const isNew = editForm.id?.startsWith('limito-new-') || !products.find(p => p.id === editForm.id);
+      // Verificar si es nuevo: debe tener ID temporal Y no existir en la lista de productos
+      const isNew = editForm.id?.startsWith('limito-new-') && !products.find(p => p.id === editForm.id);
 
       const saveRes = await fetch('/api/admin/products', {
         method: isNew ? 'POST' : 'PUT',
@@ -212,12 +268,28 @@ export default function AdminPage() {
       setProducts(data.products || []);
 
       setToast({ message: isNew ? 'Producto creado correctamente' : 'Producto actualizado correctamente', type: 'success' });
-    } catch {
-      setToast({ message: 'Error al guardar producto', type: 'error' });
+    } catch (error) {
+      if (error instanceof TypeError) {
+        setToast({ message: 'Error de conexión. Verifica tu internet.', type: 'error' });
+      } else {
+        setToast({ message: 'Error al guardar producto', type: 'error' });
+      }
     }
   };
 
   const uploadImage = async (file: File, colorIdx: number, imgIdx: number) => {
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      setToast({ message: 'Solo se permiten archivos de imagen', type: 'error' });
+      return;
+    }
+    
+    // Validar tamaño (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ message: 'La imagen no puede superar 5MB', type: 'error' });
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onloadend = async () => {
       if ('colors' in editForm && Array.isArray(editForm.colors)) {
@@ -251,6 +323,19 @@ export default function AdminPage() {
 
   const addImage = (colorIdx: number, file: File) => {
     if (!file) return;
+    
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      setToast({ message: 'Solo se permiten archivos de imagen', type: 'error' });
+      return;
+    }
+    
+    // Validar tamaño (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ message: 'La imagen no puede superar 5MB', type: 'error' });
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onloadend = async () => {
       if ('colors' in editForm && Array.isArray(editForm.colors)) {
@@ -406,7 +491,10 @@ export default function AdminPage() {
     window.location.href = '/';
   };
 
-  if (pageLoading) return <LoadingScreen />;
+  // Early returns
+  if (pageLoading) {
+    return <LoadingScreen />;
+  }
 
   if (!authenticated) {
     return (
@@ -436,33 +524,29 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F5F1E8' }}>
-      <header className="bg-black text-white py-6 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      {/* Header mejorado */}
+      <header className="bg-gradient-to-r from-black via-gray-900 to-black text-white shadow-2xl sticky top-0 z-50 border-b-4 border-red-600">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-all"
+              className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="text-2xl font-black">LIMITØ ADMIN</h1>
+            <h1 className="text-3xl font-black tracking-tight">LIMITØ ADMIN</h1>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+          <button 
+            onClick={handleLogout} 
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition-all shadow-lg hover:shadow-xl font-bold hover:scale-105"
+          >
             <LogOut className="w-5 h-5" />
-            <span className="font-bold">Salir</span>
+            Salir
           </button>
         </div>
       </header>
 
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50"
-          style={{ zIndex: 40 }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
+      {/* Sidebar mejorado */}
       <AdminSidebar
         activeTab={activeTab}
         sidebarOpen={sidebarOpen}
@@ -516,9 +600,10 @@ export default function AdminPage() {
                   setEditingProduct(newProduct.id);
                   setEditForm(newProduct);
                 }}
-                className="px-6 py-3 bg-[#ffd624] text-black text-sm font-black uppercase rounded-lg hover:bg-[#ffed4e] transition-all shadow-lg"
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-black uppercase rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center gap-2"
               >
-                + Añadir Producto
+                <span className="text-2xl">+</span>
+                Añadir Producto
               </button>
             </div>
             {(editingProduct?.startsWith('limito-new-') 
@@ -765,19 +850,21 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="px-8 py-6 border-t border-gray-300">
-                      <div className="flex gap-6 justify-center">
+                    <div className="px-8 py-6 border-t-2 border-gray-200 bg-gray-50">
+                      <div className="flex gap-4 justify-center">
                         <button
                           onClick={cancelEdit}
-                          className="px-12 py-4 bg-white text-black text-base font-black uppercase rounded-lg hover:bg-gray-50 transition-all border-2 border-gray-500"
+                          className="px-10 py-4 bg-white text-gray-700 text-base font-black uppercase rounded-xl hover:bg-gray-100 transition-all border-2 border-gray-300 shadow-md hover:shadow-lg flex items-center gap-2"
                         >
-                          ✕ Cancelar
+                          <span className="text-xl">✕</span>
+                          Cancelar
                         </button>
                         <button
                           onClick={saveProduct}
-                          className="px-12 py-4 bg-[#ffd624] text-black text-base font-black uppercase rounded-lg hover:bg-[#ffed4e] transition-all shadow-lg"
+                          className="px-10 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-base font-black uppercase rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center gap-2"
                         >
-                          💾 Guardar Cambios
+                          <span className="text-xl">💾</span>
+                          Guardar Cambios
                         </button>
                       </div>
                     </div>
@@ -826,14 +913,16 @@ export default function AdminPage() {
                         <div className="flex flex-col sm:flex-row gap-3">
                           <button
                             onClick={() => startEdit(product.id)}
-                            className="px-6 py-3 bg-black text-white text-sm font-black uppercase rounded-lg hover:bg-gray-800 transition-all shadow-lg"
+                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-black uppercase rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
                           >
+                            <span>✏️</span>
                             Editar
                           </button>
                           <button
                             type="button"
                             onClick={async (e) => {
                               e.stopPropagation();
+                              if (!confirm('¿Estás seguro de eliminar este producto?')) return;
                               try {
                                 await fetch('/api/admin/products', {
                                   method: 'DELETE',
@@ -846,8 +935,9 @@ export default function AdminPage() {
                                 setToast({ message: 'Error al eliminar', type: 'error' });
                               }
                             }}
-                            className="px-6 py-3 bg-red-500 text-white text-sm font-black uppercase rounded-lg hover:bg-red-600 transition-all shadow-lg"
+                            className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-black uppercase rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
                           >
+                            <span>🗑️</span>
                             Eliminar
                           </button>
                         </div>
@@ -923,8 +1013,9 @@ export default function AdminPage() {
 
               <button
                 onClick={saveStoreSettings}
-                className="w-full bg-black text-white py-4 text-sm font-black uppercase tracking-wider rounded-lg hover:bg-[#1A1A1A] transition-all"
+                className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-4 text-sm font-black uppercase tracking-wider rounded-xl hover:from-gray-900 hover:to-gray-800 transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-2"
               >
+                <span className="text-xl">💾</span>
                 Guardar Configuración de Tienda
               </button>
             </div>
@@ -1025,6 +1116,19 @@ export default function AdminPage() {
                       setToast({ message: 'Completa todos los campos', type: 'error' });
                       return;
                     }
+                    
+                    // Validar formato
+                    if (!/^[A-Z0-9]+$/.test(newAccessCode)) {
+                      setToast({ message: 'El código solo puede contener letras mayúsculas y números', type: 'error' });
+                      return;
+                    }
+                    
+                    // Validar duplicados
+                    if (accessCodes.some(c => c.code === newAccessCode)) {
+                      setToast({ message: 'Este código ya existe', type: 'error' });
+                      return;
+                    }
+                    
                     try {
                       const res = await fetch('/api/admin/config', {
                         method: 'POST',
@@ -1041,13 +1145,18 @@ export default function AdminPage() {
                         await loadStoreConfig();
                         setToast({ message: 'Código de acceso creado correctamente', type: 'success' });
                       } else {
+                        const data = await res.json();
+                        setToast({ message: data.error || 'Error al crear código', type: 'error' });
+                      }
+                    } catch (error) {
+                      if (error instanceof TypeError) {
+                        setToast({ message: 'Error de conexión. Verifica tu internet.', type: 'error' });
+                      } else {
                         setToast({ message: 'Error al crear código', type: 'error' });
                       }
-                    } catch {
-                      setToast({ message: 'Error al crear código', type: 'error' });
                     }
                   }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 text-sm font-black uppercase tracking-wider rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-4 text-sm font-black uppercase tracking-wider rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" />
                   Crear Código de Acceso
@@ -1198,6 +1307,25 @@ export default function AdminPage() {
                       setToast({ message: 'Completa código y valor', type: 'error' });
                       return;
                     }
+                    
+                    // Validar formato
+                    if (!/^[A-Z0-9]+$/.test(newPromoCode)) {
+                      setToast({ message: 'El código solo puede contener letras mayúsculas y números', type: 'error' });
+                      return;
+                    }
+                    
+                    // Validar duplicados
+                    if (promoCodes.some(p => p.code === newPromoCode)) {
+                      setToast({ message: 'Este código ya existe', type: 'error' });
+                      return;
+                    }
+                    
+                    // Validar valor
+                    if (newPromoType === 'percentage' && (newPromoValue <= 0 || newPromoValue > 100)) {
+                      setToast({ message: 'El porcentaje debe estar entre 1 y 100', type: 'error' });
+                      return;
+                    }
+                    
                     try {
                       const res = await fetch('/api/admin/config', {
                         method: 'POST',
@@ -1217,13 +1345,18 @@ export default function AdminPage() {
                         await loadStoreConfig();
                         setToast({ message: 'Código de descuento creado correctamente', type: 'success' });
                       } else {
+                        const data = await res.json();
+                        setToast({ message: data.error || 'Error al crear código', type: 'error' });
+                      }
+                    } catch (error) {
+                      if (error instanceof TypeError) {
+                        setToast({ message: 'Error de conexión. Verifica tu internet.', type: 'error' });
+                      } else {
                         setToast({ message: 'Error al crear código', type: 'error' });
                       }
-                    } catch {
-                      setToast({ message: 'Error al crear código', type: 'error' });
                     }
                   }}
-                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-4 text-sm font-black uppercase tracking-wider rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 text-sm font-black uppercase tracking-wider rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" />
                   Crear Código de Descuento
@@ -1298,6 +1431,13 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <AdvancedSettings 
+            onSuccess={(msg) => setToast({ message: msg, type: 'success' })}
+            onError={(msg) => setToast({ message: msg, type: 'error' })}
+          />
         )}
       </div>
 

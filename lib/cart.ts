@@ -16,22 +16,55 @@ interface CartResult {
 
 const CART_KEY = 'limito_cart';
 const SESSION_KEY = 'limito_session_id';
+const SESSION_TIMESTAMP_KEY = 'limito_session_timestamp';
+const SESSION_DURATION = 5 * 60 * 1000; // 5 minutes
 const MAX_ITEMS = 5;
 const RESERVATION_DURATION = 900000;
 
+const syncTimeout: NodeJS.Timeout | null = null;
+let lastSync = 0;
+const SYNC_DEBOUNCE = 2000; // 2 segundos entre syncs
+const pendingReserves = new Map<string, Promise<CartResult>>(); // Deduplicación de reserves
+
 function getSessionId(): string {
   if (typeof window === 'undefined') return '';
+  
+  const timestamp = sessionStorage.getItem(SESSION_TIMESTAMP_KEY);
+  const now = Date.now();
+  
+  // Check if session expired (5 minutes)
+  if (timestamp && (now - parseInt(timestamp, 10)) > SESSION_DURATION) {
+    // Session expired, clear everything
+    sessionStorage.clear();
+    localStorage.removeItem(CART_KEY);
+    document.cookie.split(';').forEach(cookie => {
+      const name = cookie.split('=')[0].trim();
+      if (name.startsWith('limito_') || name === 'user_token') {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      }
+    });
+    window.location.href = '/password';
+    return '';
+  }
+  
   let sessionId = sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) {
     sessionId = crypto.randomUUID();
     sessionStorage.setItem(SESSION_KEY, sessionId);
+    sessionStorage.setItem(SESSION_TIMESTAMP_KEY, now.toString());
   }
   return sessionId;
+}
+
+function refreshSession(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now().toString());
 }
 
 export const cart = {
   get: (): CartItem[] => {
     if (typeof window === 'undefined') return [];
+    refreshSession(); // Refresh session on every cart access
     try {
       const data = localStorage.getItem(CART_KEY);
       return data ? JSON.parse(data) : [];
@@ -40,13 +73,22 @@ export const cart = {
     }
   },
 
-  // Sync with server reservations
+  // Sync with server reservations (debounced)
   sync: async (): Promise<CartItem[]> => {
     if (typeof window === 'undefined') return [];
+    
+    // Debounce: no hacer sync si ya se hizo hace menos de 2 segundos
+    const now = Date.now();
+    if (now - lastSync < SYNC_DEBOUNCE) {
+      return cart.get();
+    }
+    
+    refreshSession(); // Refresh session
     try {
       const items = cart.get();
       if (items.length === 0) return [];
 
+      lastSync = now;
       const sessionId = getSessionId();
       const res = await fetch('/api/cart/validate', {
         method: 'POST',
@@ -90,7 +132,9 @@ export const cart = {
       }
 
       const sessionId = getSessionId();
-      const res = await fetch('/api/cart/reserve', {
+      
+      // FLUJO PRECISO: Esperar confirmación del servidor ANTES de agregar al carrito
+      const reserveResponse = await fetch('/api/cart/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,27 +145,26 @@ export const cart = {
         }),
       });
 
-      const data = await res.json();
+      const reserveData = await reserveResponse.json();
 
-      if (!data.success) {
-        return { success: false, error: data.error || 'Stock no disponible' };
+      if (!reserveData.success) {
+        // Si falla, NO agregar al carrito
+        return { success: false, error: reserveData.error || 'Error al reservar' };
       }
 
+      // Solo si la reserva fue exitosa, agregar al carrito local
       if (existing) {
         existing.quantity = newTotalQuantity;
         existing.reservedAt = Date.now();
       } else {
         items.push({ ...item, quantity: item.quantity, reservedAt: Date.now() } as CartItem);
       }
-
+      
       localStorage.setItem(CART_KEY, JSON.stringify(items));
-      
-      // Limpiar cache
-      await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
-      
       window.dispatchEvent(new Event('cart-updated'));
+      
       return { success: true };
-    } catch {
+    } catch (error) {
       return { success: false, error: 'Error al agregar al carrito' };
     }
   },

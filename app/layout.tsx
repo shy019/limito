@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import LanguageSelector from '@/components/LanguageSelector';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import GlobalLoader from '@/components/GlobalLoader';
 import { BackgroundProvider } from '@/contexts/BackgroundContext';
 import { generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo';
 import "./globals.css";
@@ -67,7 +68,9 @@ export default async function RootLayout({
         <GoogleAnalytics />
         <BackgroundProvider>
           <NextIntlClientProvider messages={messages}>
-            {children}
+            <GlobalLoader>
+              {children}
+            </GlobalLoader>
           </NextIntlClientProvider>
         </BackgroundProvider>
         <div id="modal-root"></div>

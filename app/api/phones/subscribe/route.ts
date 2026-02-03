@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { appendToSheet, readSheet } from '@/lib/google-sheets';
+import { addPhoneSubscription } from '@/lib/turso-products-v2';
 import { decryptFromTransit } from '@/lib/server-crypto';
 
 export async function POST(request: Request) {
@@ -13,14 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
     }
 
-    // Verificar si la hoja tiene encabezados
-    const existingData = await readSheet('phones', 'A:B', false);
-    if (!existingData || existingData.length === 0) {
-      await appendToSheet('phones', [['phone', 'timestamp']]);
+    const result = await addPhoneSubscription(phone);
+    
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
-
-    // Guardar en Google Sheets
-    await appendToSheet('phones', [[phone, new Date().toISOString()]]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

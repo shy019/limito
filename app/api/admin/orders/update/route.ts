@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateOrderInSheets } from '@/lib/sheets-orders';
+import { rateLimit } from '@/lib/rate-limit';
+
+import { updateOrderInSheets } from '@/lib/turso-orders';
 import { sendTrackingEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  if (!rateLimit(`api-${ip}`, 20, 60000).success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
     const { orderId, status, trackingNumber, carrier } = await req.json();
     
@@ -18,8 +25,8 @@ export async function POST(req: NextRequest) {
     }
     
     if (trackingNumber) {
-      const ordersResult = await import('@/lib/sheets-orders').then(m => m.getOrdersFromSheets());
-      const order = ordersResult.data?.find(o => o.id === orderId);
+      const ordersResult = await import('@/lib/turso-orders').then(m => m.getOrdersFromTurso());
+      const order = ordersResult.orders?.find((o: any) => o.id === orderId);
       
       if (order?.customerEmail) {
         await sendTrackingEmail({

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchStoreConfig } from '@/lib/store-config-cache';
 
 interface BackgroundContextType {
   backgroundImage: string;
@@ -13,14 +14,18 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   const [backgroundImage, setBackgroundImage] = useState('');
 
   useEffect(() => {
-    fetch('/api/store-config?t=' + Date.now())
-      .then(res => res.json())
+    let mounted = true;
+    
+    fetchStoreConfig()
       .then(data => {
+        if (!mounted) return;
         if (data.config?.backgroundImage) {
           setBackgroundImage(data.config.backgroundImage);
         }
       })
       .catch(() => {});
+    
+    return () => { mounted = false; };
   }, []);
 
   return (

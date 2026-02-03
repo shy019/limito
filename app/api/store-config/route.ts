@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getConfigFromSheets, saveConfigToSheets } from '@/lib/sheets-config';
+import { getSettingsFromTurso, updateSettingInTurso } from '@/lib/turso-products-v2';
 import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
-    const sheetsConfig = await getConfigFromSheets();
-    const mode = sheetsConfig?.store_mode || process.env.STORE_MODE || 'password';
+    const settings = await getSettingsFromTurso();
+    const mode = settings?.store_mode || process.env.STORE_MODE || 'password';
     
     const response = NextResponse.json({ 
       mode, 
       config: { 
         mode, 
-        passwordUntil: sheetsConfig?.password_until || null,
-        backgroundImage: sheetsConfig?.background_image || null
+        passwordUntil: settings?.password_until || null,
+        backgroundImage: settings?.background_image || null
       } 
     });
     
@@ -36,12 +36,12 @@ export async function POST(request: Request) {
   try {
     const { mode, passwordUntil, backgroundImage } = await request.json();
     
-    await saveConfigToSheets('store_mode', mode);
+    await updateSettingInTurso('store_mode', mode, 'admin');
     if (passwordUntil !== undefined) {
-      await saveConfigToSheets('password_until', passwordUntil ? new Date(passwordUntil).toISOString() : '');
+      await updateSettingInTurso('password_until', passwordUntil ? new Date(passwordUntil).toISOString() : '', 'admin');
     }
     if (backgroundImage !== undefined) {
-      await saveConfigToSheets('background_image', backgroundImage);
+      await updateSettingInTurso('background_image', backgroundImage, 'admin');
     }
     
     const response = NextResponse.json({ success: true });

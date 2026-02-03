@@ -1,9 +1,9 @@
-import { ShoppingCart, Package, Settings, Key, Tag } from 'lucide-react';
+import { ShoppingCart, Package, Settings, Key, Tag, Sliders } from 'lucide-react';
 
 interface AdminSidebarProps {
-  activeTab: 'orders' | 'products' | 'config' | 'access' | 'promos';
+  activeTab: 'orders' | 'products' | 'config' | 'access' | 'promos' | 'settings';
   sidebarOpen: boolean;
-  onTabChange: (tab: 'orders' | 'products' | 'config' | 'access' | 'promos') => void;
+  onTabChange: (tab: 'orders' | 'products' | 'config' | 'access' | 'promos' | 'settings') => void;
   onClose: () => void;
 }
 
@@ -12,6 +12,7 @@ export default function AdminSidebar({ activeTab, sidebarOpen, onTabChange, onCl
     { id: 'orders', label: 'Órdenes', icon: ShoppingCart, color: 'purple' },
     { id: 'products', label: 'Productos', icon: Package, color: 'blue' },
     { id: 'config', label: 'Configuración', icon: Settings, color: 'gray' },
+    { id: 'settings', label: 'Configuración Avanzada', icon: Sliders, color: 'green' },
     { id: 'access', label: 'Claves de Acceso', icon: Key, color: 'indigo' },
     { id: 'promos', label: 'Códigos de Descuento', icon: Tag, color: 'yellow' },
   ] as const;

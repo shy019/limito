@@ -1,4 +1,4 @@
-export type StoreMode = 'password' | 'active' | 'soldout';
+export type StoreMode = 'password' | 'active' | 'soldout' | 'maintenance';
 
 export interface StoreConfig {
   mode: StoreMode;

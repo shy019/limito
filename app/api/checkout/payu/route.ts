@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSignature } from '@/lib/payu';
-import { addOrderToSheets } from '@/lib/sheets-orders';
+import { addOrderToSheets } from '@/lib/turso-orders';
 import { logger } from '@/lib/logger';
 import { decryptFromTransit } from '@/lib/server-crypto';
 import { rateLimit } from '@/lib/rate-limit';

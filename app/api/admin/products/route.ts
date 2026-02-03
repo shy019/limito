@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
+
 import type { Product } from '@/lib/products';
 import { revalidatePath } from 'next/cache';
-import { updateProductInSheets, deleteProductFromSheets, addProductToSheets } from '@/lib/sheets-products';
+import { updateProductInSheets, deleteProductFromSheets, addProductToSheets } from '@/lib/turso-products-v2';
 
 export async function POST(request: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  if (!rateLimit(`api-${ip}`, 20, 60000).success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
     const newProduct: Product = await request.json();
     

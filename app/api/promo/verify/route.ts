@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-
-const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {
     const { token } = await req.json();
     
-    jwt.verify(token, JWT_SECRET);
+    const isValid = verifyAccessToken(token);
     
-    return NextResponse.json({ valid: true });
+    if (!isValid) {
+      logger.warn('Invalid or expired token verification attempt');
+    }
+    
+    return NextResponse.json({ valid: isValid });
   } catch (error) {
-    logger.warn('Invalid token verification attempt', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.warn('Token verification error', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ valid: false });
   }
 }

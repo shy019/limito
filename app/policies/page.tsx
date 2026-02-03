@@ -1,4 +1,6 @@
 'use client';
+import { fetchStoreConfig } from '@/lib/store-config-cache';
+
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -16,8 +18,8 @@ export default function PoliticasPage() {
   useEffect(() => {
     const isPublicPage = true; // Policies is always public
     
-    fetch('/api/store-config')
-      .then(res => res.json())
+    fetchStoreConfig()
+      .then(data => data)
       .then(data => {
         const mode = data.config.mode;
         

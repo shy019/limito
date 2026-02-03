@@ -1,4 +1,6 @@
 'use client';
+import { fetchStoreConfig } from '@/lib/store-config-cache';
+
 
 import { useState, useEffect, useRef } from 'react';
 import { Instagram, Youtube, Send } from 'lucide-react';
@@ -67,8 +69,8 @@ export default function PasswordPage() {
       return;
     }
 
-    fetch('/api/store-config')
-      .then(res => res.json())
+    fetchStoreConfig()
+      .then(data => data)
       .then(data => {
         if (data.config.mode === 'soldout') {
           window.location.replace('/soldout');

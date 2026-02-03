@@ -1,4 +1,6 @@
 'use client';
+import { fetchStoreConfig } from '@/lib/store-config-cache';
+
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,8 +12,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   const checkStoreMode = () => {
-    fetch('/api/store-config')
-      .then(res => res.json())
+    fetchStoreConfig()
+      .then(data => data)
       .then(data => {
         const mode = data.config.mode;
         
@@ -25,7 +27,7 @@ export default function Home() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token: userToken }),
             })
-              .then(res => res.json())
+              .then(data => data)
               .then(data => {
                 if (data.valid) {
                   setLoading(false);

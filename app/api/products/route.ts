@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getProductsFromSheets } from '@/lib/sheets-products';
+import { getProductsFromTurso } from '@/lib/turso-products-v2';
 import { rateLimit } from '@/lib/rate-limit';
 import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 60; // Cache 60 segundos
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await getProductsFromSheets(false);
+    const result = await getProductsFromTurso();
     
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/cloudinary';
-import { saveConfigToSheets } from '@/lib/sheets-config';
+import { updateSettingInTurso } from '@/lib/turso-products-v2';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const base64 = `data:${file.type};base64,${buffer.toString('base64')}`;
 
     const url = await uploadImage(base64, 'limito/backgrounds');
-    await saveConfigToSheets('background_image', url);
+    await updateSettingInTurso('background_image', url, 'admin');
 
     return NextResponse.json({ success: true, path: url });
   } catch (error) {

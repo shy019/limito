@@ -5,8 +5,9 @@ interface CacheEntry<T> {
 }
 
 const cache = new Map<string, CacheEntry<unknown>>();
-const MAX_CACHE_SIZE = 100;
-const CLEANUP_INTERVAL = 300000; // 5 minutes
+const CACHE_TTL = 120000; // 2 minutos (aumentado para reducir lecturas)
+const MAX_CACHE_SIZE = 50; // Reducido de 100
+const CLEANUP_INTERVAL = 120000; // 2 minutos (sincronizado con TTL)
 let lastCleanup = Date.now();
 
 function maybeCleanup() {

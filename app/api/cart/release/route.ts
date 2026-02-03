@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { releaseStockInSheets } from '@/lib/sheets-reservations';
-import { clearCache } from '@/lib/cache';
+import { releaseReservationInTurso } from '@/lib/turso-products-v2';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  if (!rateLimit(`cart-release-${ip}`, 30, 60000).success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const { productId, color, sessionId } = await req.json();
 
     if (!productId || !color || !sessionId) {
-      return NextResponse.json({ success: false, error: 'Datos incompletos' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    await releaseStockInSheets(productId, color, sessionId);
-    clearCache('reservations');
-    clearCache('products');
+    await releaseReservationInTurso(productId, color, sessionId);
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ success: false, error: 'Error al liberar stock' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to release reservation' }, { status: 500 });
   }
 }
