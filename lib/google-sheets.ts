@@ -1,26 +1,12 @@
 import { google } from 'googleapis';
 import { getCache, setCache, clearCache } from './cache';
+import { withRetry } from './resilience';
 
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID!;
 const CACHE_TTL = 300000; // 5 minutos
+const SHEETS_TIMEOUT = 15000;
 
 type SheetRow = (string | number | boolean)[];
-
-async function retryOperation<T>(
-  operation: () => Promise<T>,
-  maxRetries = 3,
-  delay = 1000
-): Promise<T> {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
-    }
-  }
-  throw new Error('Max retries exceeded');
-}
 
 async function getAuthClient() {
   // Try env var first (for Vercel), then fall back to file (for local dev)
@@ -43,7 +29,7 @@ async function getAuthClient() {
 }
 
 export async function appendToSheet(sheetName: string, values: SheetRow[]) {
-  return retryOperation(async () => {
+  return withRetry(async () => {
     const authClient = await getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient as never });
 
@@ -51,17 +37,15 @@ export async function appendToSheet(sheetName: string, values: SheetRow[]) {
       spreadsheetId: SPREADSHEET_ID,
       range: `${sheetName}!A:Z`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values,
-      },
+      requestBody: { values },
     });
 
     clearCache(sheetName);
-  });
+  }, { timeout: SHEETS_TIMEOUT });
 }
 
 export async function readSheet(sheetName: string, range = 'A:Z', useCache = true): Promise<SheetRow[]> {
-  return retryOperation(async () => {
+  return withRetry(async () => {
     const cacheKey = `sheet:${sheetName}:${range}`;
     
     if (useCache) {
@@ -80,11 +64,11 @@ export async function readSheet(sheetName: string, range = 'A:Z', useCache = tru
     const data = (response.data.values || []) as SheetRow[];
     setCache(cacheKey, data);
     return data;
-  });
+  }, { timeout: SHEETS_TIMEOUT });
 }
 
 export async function updateSheet(sheetName: string, range: string, values: SheetRow[]) {
-  return retryOperation(async () => {
+  return withRetry(async () => {
     const authClient = await getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient as never });
 
@@ -92,17 +76,15 @@ export async function updateSheet(sheetName: string, range: string, values: Shee
       spreadsheetId: SPREADSHEET_ID,
       range: `${sheetName}!${range}`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values,
-      },
+      requestBody: { values },
     });
 
     clearCache(sheetName);
-  });
+  }, { timeout: SHEETS_TIMEOUT });
 }
 
 export async function batchRead(requests: Array<{ sheetName: string; range?: string }>): Promise<SheetRow[][]> {
-  return retryOperation(async () => {
+  return withRetry(async () => {
     const authClient = await getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient as never });
 
@@ -114,11 +96,11 @@ export async function batchRead(requests: Array<{ sheetName: string; range?: str
     });
 
     return (response.data.valueRanges || []).map(vr => (vr.values || []) as SheetRow[]);
-  });
+  }, { timeout: SHEETS_TIMEOUT });
 }
 
 export async function batchUpdate(updates: Array<{ sheetName: string; range: string; values: SheetRow[] }>) {
-  return retryOperation(async () => {
+  return withRetry(async () => {
     const authClient = await getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient as never });
 
@@ -136,5 +118,5 @@ export async function batchUpdate(updates: Array<{ sheetName: string; range: str
     });
 
     updates.forEach(u => clearCache(u.sheetName));
-  });
+  }, { timeout: SHEETS_TIMEOUT });
 }

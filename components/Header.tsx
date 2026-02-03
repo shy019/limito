@@ -16,13 +16,13 @@ export default function Header({ locale, onLanguageToggle, cartCount = 0, showCa
   return (
     <header className="fixed top-0 left-0 right-0 w-full" style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(10px)', paddingTop: '20px', zIndex: 100000 }}>
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between" style={{ marginLeft: '20px', marginRight: '20px' }}>
-        <Logo size="md" href="/" />
+        <Logo size="md" href="/catalog" />
         <div className="flex items-center" style={{ gap: '1rem' }}>
           {showCart && (
             <Link href="/cart" className="relative rounded-full w-12 h-12 shadow-lg flex items-center justify-center hover:scale-110 transition-transform" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
               <ShoppingCart className="w-6 h-6 pointer-events-none" style={{ color: '#ffffff' }} />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black pointer-events-none" style={{ backgroundColor: '#ffd624', color: '#000000' }}>
+                <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black pointer-events-none" style={{ backgroundColor: '#D4AF37', color: '#000000' }}>
                   {cartCount}
                 </span>
               )}

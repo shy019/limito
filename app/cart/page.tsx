@@ -73,37 +73,13 @@ export default function CarritoPage() {
   }, []);
 
   useEffect(() => {
-    const cleanCart = async () => {
-      const cartItems = cart.get();
-
-      if (cartItems.length === 0) {
-        setItems([]);
-        setCartLoading(false);
-        return;
-      }
-
-      const productIds = [...new Set(cartItems.map(item => item.productId))];
-
-      for (const productId of productIds) {
-        try {
-          const res = await fetch(`/api/products/available-stock?productId=${productId}`);
-          const data = await res.json();
-
-          if (data.errorCode === 'PRODUCT_NOT_FOUND') {
-            cartItems.filter(item => item.productId === productId).forEach(item => {
-              cart.remove(item.productId, item.color);
-            });
-          }
-        } catch {
-          // Error al verificar producto
-        }
-      }
-
-      setItems(cart.get());
+    const syncCart = async () => {
+      const synced = await cart.sync();
+      setItems(synced);
       setCartLoading(false);
     };
 
-    cleanCart();
+    syncCart();
 
     const handleUpdate = () => setItems(cart.get());
     window.addEventListener('cart-updated', handleUpdate);
@@ -280,7 +256,7 @@ export default function CarritoPage() {
               }
             }
           `}</style>
-          <button onClick={() => window.location.href = '/'} className="fixed hover:bg-white rounded-full z-50 back-button" style={{ padding: '1rem', left: '1rem', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+          <button onClick={() => window.location.href = '/catalog'} className="fixed hover:bg-white rounded-full z-50 back-button" style={{ padding: '0.5rem', left: '1.5rem', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
             <ChevronLeft className="w-6 h-6" />
           </button>
           <div className="mb-8 flex items-center justify-end">

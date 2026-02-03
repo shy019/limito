@@ -98,6 +98,26 @@ export async function getAvailableStockFromSheets(
   }
 }
 
+export async function getActiveReservations(sessionId: string): Promise<StockReservation[]> {
+  try {
+    await cleanExpiredReservations();
+    const rows = await readSheet('reservations', 'A2:E1000', false);
+    const now = Date.now();
+    
+    return rows
+      .filter(row => row[0] && row[4] === sessionId && Number(row[3]) > now)
+      .map(row => ({
+        productId: String(row[0]),
+        color: String(row[1]),
+        quantity: Number(row[2]),
+        expiresAt: Number(row[3]),
+        sessionId: String(row[4])
+      }));
+  } catch {
+    return [];
+  }
+}
+
 const LOCK_KEY = 'clean-lock';
 const LOCK_DURATION = 5000;
 const locks = new Map<string, number>();

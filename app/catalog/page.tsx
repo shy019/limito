@@ -133,27 +133,9 @@ export default function CatalogoPage() {
         {!selectedProduct && (
           <main style={{ flex: 1, width: '70%', margin: '0 auto', padding: '2rem 1.5rem', paddingTop: '120px' }} className="md:py-16">
             <div className="mb-8 md:mb-12 text-center">
-              <h1 className="text-3xl md:text-6xl font-black mb-2 md:mb-4 animate-fade-in" style={{ color: '#ffffff' }}>{t('title')}</h1>
-              <p className="text-base md:text-xl font-medium animate-slide-up" style={{ color: 'rgba(255, 255, 255, 0.9)', animationDelay: '0.1s' }}>{t('subtitle')}</p>
+              <h1 className="text-3xl md:text-6xl font-black mb-2 md:mb-4" style={{ color: '#ffffff' }}>{t('title')}</h1>
+              <p className="text-base md:text-xl font-medium" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>{t('subtitle')}</p>
             </div>
-
-            <style jsx>{`
-              @keyframes fade-in {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-              @keyframes slide-up {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-              .animate-fade-in {
-                animation: fade-in 0.6s ease-out;
-              }
-              .animate-slide-up {
-                animation: slide-up 0.6s ease-out;
-                animation-fill-mode: both;
-              }
-            `}</style>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4">
               {products.filter(p => p.id).map((product) => (
@@ -198,9 +180,11 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
 
   return (
     <button
-      className="group cursor-pointer w-full text-left product-card relative transform transition-all duration-300 hover:-translate-y-2"
+      className="group cursor-pointer w-full text-left product-card relative transform transition-all duration-300 active:scale-[0.98]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setTimeout(() => setIsHovered(false), 150)}
       onClick={onClick}
       type="button"
       style={{ backgroundColor: 'transparent', border: 'none' }}
@@ -212,10 +196,10 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
         transform: 'translate(-50%, -50%)',
         backgroundColor: 'transparent',
         transition: 'all 0.3s ease-in-out',
-        boxShadow: isHovered ? '1px 3px 124px 98px rgba(255, 214, 36, 0.75)' : '1px 3px 5px -1px rgba(255, 214, 36, 0.75)',
+        boxShadow: isHovered ? '1px 3px 124px 98px rgba(212, 175, 55, 0.75)' : '1px 3px 5px -1px rgba(212, 175, 55, 0.75)',
         pointerEvents: 'none'
       }}><span></span></div>
-      <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)' }}>
+      <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)', transform: isHovered ? 'translateY(-8px)' : 'translateY(0)' }}>
         <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'transparent' }}>
           <ResponsiveProductImage
             src={isHovered && hoverImage ? hoverImage : mainImage}
@@ -224,23 +208,33 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
             height={800}
             loading="eager"
             className="w-full h-full object-cover transition-transform duration-500"
-            style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+            style={{ transform: isHovered ? 'scale(1.08)' : 'scale(1)' }}
           />
+
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: isHovered ? 1 : 0 }}
+          >
+            <span className="text-sm font-bold uppercase tracking-widest px-6 py-3" style={{ backgroundColor: '#D4AF37', color: '#000' }}>
+              {t('viewDetails')}
+            </span>
+          </div>
 
           {mainColor.stock === 0 ? (
             <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: '#ff0000', color: '#ffffff' }}>
               {t('soldOut')}
             </div>
           ) : mainColor.stock < 3 ? (
-            <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: 'transparent', color: '#ffd624', border: '1px solid #ffd624' }}>
+            <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: 'transparent', color: '#D4AF37', border: '1px solid #D4AF37' }}>
               {t('lowStock')}
             </div>
           ) : null}
         </div>
       </div>
       <div className="p-5 transition-all duration-300" style={{ backgroundColor: 'transparent', textAlign: 'right', transform: isHovered ? 'translateY(-5px)' : 'translateY(0)' }}>
-        <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? '#ffd624' : '#ffffff' }}>{product.name}</h3>
-        <p className="text-3xl md:text-5xl font-black" style={{ color: '#ffd624' }}>{formatPrice(mainColor.price)}</p>
+        <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? '#D4AF37' : '#ffffff' }}>{product.name}</h3>
+        <p className="text-3xl md:text-5xl font-black" style={{ color: '#D4AF37' }}>{formatPrice(mainColor.price)}</p>
       </div>
     </button>
   );
@@ -440,10 +434,11 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
           .modal-title-wrapper { display: none !important; }
           .modal-images { padding: 0 !important; background-color: transparent !important; padding-top: 80px !important; }
           .modal-info { padding: 1.5rem !important; background-color: transparent !important; }
+          .modal-main-image { height: 550px !important; }
         }
       `
     }} />
-      <button onClick={onClose} className="fixed hover:bg-white rounded-full z-50" style={{ padding: '1rem', left: '1rem', top: '75px', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+      <button onClick={onClose} className="fixed hover:bg-white rounded-full z-50" style={{ padding: '0.5rem', left: '1.5rem', top: '75px', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
         <ChevronLeft className="w-6 h-6" />
       </button>
       <div className="modal-title-wrapper" style={{ width: '70%', margin: '0 auto', paddingTop: '5rem', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: 0 }}>
@@ -456,7 +451,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
         <div className="modal-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="modal-images bg-gray-50 p-8 relative">
           <div className="max-w-2xl mx-auto w-full">
-            <div className="mb-4 flex items-center justify-center" style={{ backgroundColor: 'transparent', width: '100%', height: '400px' }}>
+            <div className="mb-4 flex items-center justify-center modal-main-image" style={{ backgroundColor: 'transparent', width: '100%', height: '500px' }}>
               <ResponsiveProductImage
                 src={displayImages[selectedImage]}
                 alt={product.name}

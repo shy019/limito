@@ -1,4 +1,4 @@
-import { reserveStockInSheets, getAvailableStockFromSheets, releaseStockInSheets } from '../sheets-reservations';
+import { reserveStockInSheets, getAvailableStockFromSheets, releaseStockInSheets, getActiveReservations } from '../sheets-reservations';
 
 describe('Stock Reservations', () => {
   
@@ -12,5 +12,9 @@ describe('Stock Reservations', () => {
 
   it('should have releaseStockInSheets function', () => {
     expect(typeof releaseStockInSheets).toBe('function');
+  });
+
+  it('should have getActiveReservations function', () => {
+    expect(typeof getActiveReservations).toBe('function');
   });
 });

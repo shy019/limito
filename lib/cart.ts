@@ -34,20 +34,40 @@ export const cart = {
     if (typeof window === 'undefined') return [];
     try {
       const data = localStorage.getItem(CART_KEY);
-      const items: CartItem[] = data ? JSON.parse(data) : [];
-      
-      const now = Date.now();
-      const validItems = items.filter(item => 
-        !item.reservedAt || (now - item.reservedAt) < RESERVATION_DURATION
-      );
-      
-      if (validItems.length !== items.length) {
-        localStorage.setItem(CART_KEY, JSON.stringify(validItems));
-      }
-      
-      return validItems;
+      return data ? JSON.parse(data) : [];
     } catch {
       return [];
+    }
+  },
+
+  // Sync with server reservations
+  sync: async (): Promise<CartItem[]> => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const items = cart.get();
+      if (items.length === 0) return [];
+
+      const sessionId = getSessionId();
+      const res = await fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, items: items.map(i => ({ productId: i.productId, color: i.color })) }),
+      });
+
+      if (!res.ok) return items;
+
+      const { validItems } = await res.json();
+      const validKeys = new Set(validItems.map((v: {productId: string, color: string}) => `${v.productId}-${v.color}`));
+      const synced = items.filter(i => validKeys.has(`${i.productId}-${i.color}`));
+
+      if (synced.length !== items.length) {
+        localStorage.setItem(CART_KEY, JSON.stringify(synced));
+        window.dispatchEvent(new Event('cart-updated'));
+      }
+
+      return synced;
+    } catch {
+      return cart.get();
     }
   },
 

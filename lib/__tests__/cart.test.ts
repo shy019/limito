@@ -11,7 +11,9 @@ global.fetch = jest.fn(() =>
 describe('Cart Functions', () => {
   beforeEach(async () => {
     localStorage.clear();
+    sessionStorage.clear();
     await cart.clear();
+    (global.fetch as jest.Mock).mockClear();
   });
 
   test('cart.add agrega producto correctamente', async () => {
@@ -127,5 +129,41 @@ describe('Cart Functions', () => {
     });
 
     expect(cart.getTotal()).toBe(145000);
+  });
+
+  test('cart.sync removes items not in server reservations', async () => {
+    // Add item to local cart
+    localStorage.setItem('limito_cart', JSON.stringify([
+      { productId: 'p1', color: 'Negro', quantity: 1, price: 50000 },
+      { productId: 'p2', color: 'Blanco', quantity: 1, price: 45000 }
+    ]));
+
+    // Mock server returns only p1 as valid
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ validItems: [{ productId: 'p1', color: 'Negro' }] })
+    });
+
+    const synced = await cart.sync();
+    expect(synced.length).toBe(1);
+    expect(synced[0].productId).toBe('p1');
+  });
+
+  test('cart.sync returns all items if server fails', async () => {
+    localStorage.setItem('limito_cart', JSON.stringify([
+      { productId: 'p1', color: 'Negro', quantity: 1, price: 50000 }
+    ]));
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false });
+
+    const synced = await cart.sync();
+    expect(synced.length).toBe(1);
+  });
+
+  test('cart.getSessionId generates and persists session', () => {
+    const id1 = cart.getSessionId();
+    const id2 = cart.getSessionId();
+    expect(id1).toBe(id2);
+    expect(id1.length).toBeGreaterThan(0);
   });
 });

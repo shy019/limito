@@ -3,8 +3,16 @@
  */
 import { NextRequest } from 'next/server';
 
+// Mock jose
+jest.mock('jose', () => ({
+  jwtVerify: jest.fn((token: string) => {
+    if (token === 'valid-token') return Promise.resolve({ payload: { access: true } });
+    return Promise.reject(new Error('Invalid token'));
+  }),
+}));
+
 // Mock NextResponse
-const mockRedirect = jest.fn((url: URL) => ({ type: 'redirect', url: url.toString() }));
+const mockRedirect = jest.fn((url: URL) => ({ type: 'redirect', url: url.toString(), cookies: { delete: jest.fn() } }));
 const mockNext = jest.fn(() => ({ type: 'next' }));
 
 jest.mock('next/server', () => ({
@@ -32,6 +40,7 @@ describe('middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.STORE_MODE;
+    process.env.JWT_SECRET = 'test-secret';
   });
 
   describe('admin routes', () => {
@@ -39,6 +48,30 @@ describe('middleware', () => {
       const req = createRequest('/admin', { store_mode: 'soldout' });
       await middleware(req);
       expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('allows /admin/products', async () => {
+      const req = createRequest('/admin/products', { store_mode: 'password' });
+      await middleware(req);
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
+
+  describe('unknown routes', () => {
+    it('redirects unknown paths to /', async () => {
+      const req = createRequest('/unknown-path', { store_mode: 'password' });
+      await middleware(req);
+      expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({
+        pathname: '/'
+      }));
+    });
+
+    it('redirects deeply nested unknown paths to /', async () => {
+      const req = createRequest('/foo/bar/baz', { store_mode: 'active' });
+      await middleware(req);
+      expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({
+        pathname: '/'
+      }));
     });
   });
 
@@ -99,10 +132,18 @@ describe('middleware', () => {
       }));
     });
 
-    it('allows /catalog with token', async () => {
+    it('allows /catalog with valid token', async () => {
       const req = createRequest('/catalog', { store_mode: 'password', limito_access: 'valid-token' });
       await middleware(req);
       expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('redirects to /password with invalid token', async () => {
+      const req = createRequest('/catalog', { store_mode: 'password', limito_access: 'invalid-token' });
+      await middleware(req);
+      expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({
+        pathname: '/password'
+      }));
     });
 
     it('allows /password page without token', async () => {
@@ -111,7 +152,7 @@ describe('middleware', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('redirects /password to /catalog with token', async () => {
+    it('redirects /password to /catalog with valid token', async () => {
       const req = createRequest('/password', { store_mode: 'password', limito_access: 'valid-token' });
       await middleware(req);
       expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({
