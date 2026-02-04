@@ -3,15 +3,16 @@
     "nextDrop": "Próximo Drop",
     "date": "20 FEBRERO 2025",
     "newsletter": {
-      "title": "Recibe notificaciones",
+      "title": "Obtener acceso",
       "placeholder": "tu@email.com",
       "button": "OBTENER ACCESO",
       "success": "✓ ¡Gracias! Te avisaremos del lanzamiento",
-      "error": "Error al suscribirse"
+      "error": "Error al suscribirse",
+      "authorization": "Al confirmar, autorizas el uso del número telefónico para recibir comunicaciones vía WhatsApp y SMS"
     },
     "password": {
-      "title": "¿Tienes el código?",
-      "placeholder": "••••••••",
+      "title": "",
+      "placeholder": "Ingresar Contraseña",
       "button": "ACCEDER",
       "errorIncorrect": "Código incorrecto",
       "errorConnection": "Error de conexión"

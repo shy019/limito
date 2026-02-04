@@ -1025,7 +1025,7 @@ export default function AdminPage() {
             <h2 className="text-2xl font-black mb-6" style={{ color: '#0A0A0A' }}>Fondo de la App</h2>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-bold mb-2" style={{ color: '#0A0A0A' }}>Seleccionar Imagen o Video</label>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#0A0A0A' }}>1. Imagen o Video Principal</label>
                 <input
                   type="file"
                   accept="image/*,video/mp4,video/webm"
@@ -1054,7 +1054,41 @@ export default function AdminPage() {
                   className="w-full px-4 py-3 border-2 border-gray-500 rounded-lg focus:outline-none focus:border-black font-bold text-lg"
                 />
                 <p className="text-xs text-gray-600 mt-2">
-                  Sube una imagen o video. Los videos se reproducirán en loop sin sonido.
+                  • Si subes IMAGEN: se usa en toda la app<br/>
+                  • Si subes VIDEO: se reproduce en /password, /contact, /policies
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#0A0A0A' }}>2. Imagen para Catalog/Cart (Opcional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      formData.append('field', 'static');
+                      try {
+                        const res = await fetch('/api/admin/upload', {
+                          method: 'POST',
+                          body: formData,
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          setToast({ message: 'Imagen estática actualizada', type: 'success' });
+                        }
+                      } catch (error) {
+                        console.error('Error uploading static background:', error);
+                        setToast({ message: 'Error al subir imagen', type: 'error' });
+                      }
+                    }
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-500 rounded-lg focus:outline-none focus:border-black font-bold text-lg"
+                />
+                <p className="text-xs text-gray-600 mt-2">
+                  • Si NO subes nada aquí y subiste video arriba: se usa el primer frame del video<br/>
+                  • Si subes imagen aquí: se usa esta imagen personalizada en catalog/cart/product
                 </p>
               </div>
             </div>

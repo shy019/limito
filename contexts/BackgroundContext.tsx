@@ -6,8 +6,10 @@ import { fetchStoreConfig } from '@/lib/store-config-cache';
 interface BackgroundContextType {
   backgroundImage: string;
   backgroundType: 'image' | 'video';
+  staticBackgroundImage: string;
   setBackgroundImage: (image: string) => void;
   setBackgroundType: (type: 'image' | 'video') => void;
+  setStaticBackgroundImage: (image: string) => void;
 }
 
 const BackgroundContext = createContext<BackgroundContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ const BackgroundContext = createContext<BackgroundContextType | undefined>(undef
 export function BackgroundProvider({ children }: { children: React.ReactNode }) {
   const [backgroundImage, setBackgroundImage] = useState('');
   const [backgroundType, setBackgroundType] = useState<'image' | 'video'>('image');
+  const [staticBackgroundImage, setStaticBackgroundImage] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -28,6 +31,9 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
         if (data.config?.backgroundType) {
           setBackgroundType(data.config.backgroundType);
         }
+        if (data.config?.staticBackgroundImage) {
+          setStaticBackgroundImage(data.config.staticBackgroundImage);
+        }
       })
       .catch(() => {});
     
@@ -35,7 +41,7 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <BackgroundContext.Provider value={{ backgroundImage, backgroundType, setBackgroundImage, setBackgroundType }}>
+    <BackgroundContext.Provider value={{ backgroundImage, backgroundType, staticBackgroundImage, setBackgroundImage, setBackgroundType, setStaticBackgroundImage }}>
       {children}
     </BackgroundContext.Provider>
   );

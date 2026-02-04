@@ -2,19 +2,28 @@
 
 import { useBackground } from '@/contexts/BackgroundContext';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function BackgroundOverlay() {
-  const { backgroundImage, backgroundType } = useBackground();
+  const { backgroundImage, backgroundType, staticBackgroundImage } = useBackground();
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [showContent, setShowContent] = useState(false);
+  const pathname = usePathname();
+
+  // Páginas donde se muestra el video
+  const videoPages = ['/password', '/contact', '/policies'];
+  const shouldShowVideo = videoPages.includes(pathname);
+
+  // Determinar qué imagen usar
+  const imageToShow = shouldShowVideo ? backgroundImage : (staticBackgroundImage || backgroundImage);
 
   useEffect(() => {
-    if (backgroundType === 'image' || !backgroundImage) {
+    if (backgroundType === 'image' || !backgroundImage || !shouldShowVideo) {
       setShowContent(true);
       return;
     }
 
-    // Precargar video
+    // Precargar video solo si estamos en una página de video
     const video = document.createElement('video');
     video.src = backgroundImage;
     video.preload = 'auto';
@@ -30,10 +39,10 @@ export default function BackgroundOverlay() {
     return () => {
       video.removeEventListener('canplaythrough', handleCanPlayThrough);
     };
-  }, [backgroundImage, backgroundType]);
+  }, [backgroundImage, backgroundType, shouldShowVideo]);
 
-  // Loading screen
-  if (!showContent) {
+  // Loading screen solo para páginas con video
+  if (!showContent && shouldShowVideo && backgroundType === 'video') {
     return (
       <div style={{
         position: 'fixed',
@@ -54,7 +63,7 @@ export default function BackgroundOverlay() {
 
   return (
     <>
-      {backgroundType === 'video' ? (
+      {backgroundType === 'video' && shouldShowVideo ? (
         <video
           key={backgroundImage}
           autoPlay
@@ -69,6 +78,7 @@ export default function BackgroundOverlay() {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            backgroundColor: '#000',
             zIndex: 0
           }}
         >
@@ -81,9 +91,10 @@ export default function BackgroundOverlay() {
           left: 0, 
           width: '100%', 
           height: '100%', 
-          backgroundImage: `url(${backgroundImage})`, 
-          backgroundSize: 'cover', 
-          backgroundPosition: 'center', 
+          backgroundImage: `url(${imageToShow})`, 
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: '#000',
           zIndex: 0 
         }} />
       )}

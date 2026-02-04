@@ -13,7 +13,8 @@ export async function GET() {
         mode, 
         passwordUntil: settings?.password_until || null,
         backgroundImage: settings?.background_image || null,
-        backgroundType: settings?.background_type || 'image'
+        backgroundType: settings?.background_type || 'image',
+        staticBackgroundImage: settings?.static_background_image || null
       } 
     });
     
@@ -35,7 +36,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { mode, passwordUntil, backgroundImage, backgroundType } = await request.json();
+    const { mode, passwordUntil, backgroundImage, backgroundType, staticBackgroundImage } = await request.json();
     
     await updateSettingInTurso('store_mode', mode, 'admin');
     if (passwordUntil !== undefined) {
@@ -46,6 +47,9 @@ export async function POST(request: Request) {
     }
     if (backgroundType !== undefined) {
       await updateSettingInTurso('background_type', backgroundType, 'admin');
+    }
+    if (staticBackgroundImage !== undefined) {
+      await updateSettingInTurso('static_background_image', staticBackgroundImage, 'admin');
     }
     
     const response = NextResponse.json({ success: true });

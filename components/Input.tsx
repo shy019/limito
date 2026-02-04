@@ -15,20 +15,32 @@ export default function Input({
   required = false,
   error = false
 }: InputProps) {
+  const isPassword = type === 'password';
+  
   return (
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      required={required}
-      className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none font-bold transition-all"
-      style={{
-        borderColor: error ? '#ff0000' : 'rgba(255, 255, 255, 0.3)',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        color: '#ffffff',
-        width: 'calc(100% - 7px)'
-      }}
-    />
+    <>
+      {isPassword && (
+        <style>{`
+          input[type="password"]::placeholder {
+            text-align: center !important;
+            opacity: 0.7 !important;
+          }
+        `}</style>
+      )}
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none font-bold transition-all"
+        style={{
+          borderColor: error ? '#ff0000' : 'rgba(255, 255, 255, 0.3)',
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          color: '#ffffff',
+          width: 'calc(100% - 7px)'
+        }}
+      />
+    </>
   );
 }

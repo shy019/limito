@@ -5,6 +5,7 @@ export interface StoreConfig {
   passwordUntil: string | null; // ISO date string
   backgroundImage: string;
   backgroundType?: 'image' | 'video';
+  staticBackgroundImage?: string; // Imagen estática para catalog/cart/product
 }
 
 const CONFIG_KEY = 'limito_store_config';

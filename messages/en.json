@@ -3,15 +3,16 @@
     "nextDrop": "Next Drop",
     "date": "FEBRUARY 20, 2025",
     "newsletter": {
-      "title": "Get notified",
+      "title": "Get access",
       "placeholder": "your@email.com",
       "button": "GET ACCESS",
       "success": "✓ Thanks! We'll notify you about the launch",
-      "error": "Error subscribing"
+      "error": "Error subscribing",
+      "authorization": "By confirming, you authorize the use of your phone number to receive communications via WhatsApp and SMS"
     },
     "password": {
-      "title": "Have the code?",
-      "placeholder": "••••••••",
+      "title": "",
+      "placeholder": "Enter Password",
       "button": "ACCESS",
       "errorIncorrect": "Incorrect code",
       "errorConnection": "Connection error"
