@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const knownRoutes = ['/', '/password', '/catalog', '/catalogo', '/product', '/producto', '/checkout', '/cart', '/carrito', '/soldout', '/admin'];
+const knownRoutes = ['/', '/password', '/catalog', '/catalogo', '/product', '/producto', '/checkout', '/cart', '/carrito', '/soldout', '/admin', '/policies', '/contact'];
 
 async function isValidToken(token: string): Promise<boolean> {
   try {
