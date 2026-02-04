@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const type = formData.get('type') as string || 'image';
     
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
 
     const url = await uploadImage(base64, 'limito/backgrounds');
     await updateSettingInTurso('background_image', url, 'admin');
+    await updateSettingInTurso('background_type', type, 'admin');
 
     return NextResponse.json({ success: true, path: url });
   } catch (error) {

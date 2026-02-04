@@ -1022,18 +1022,19 @@ export default function AdminPage() {
           </div>
 
           <div className="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-lg">
-            <h2 className="text-2xl font-black mb-6" style={{ color: '#0A0A0A' }}>Imagen de Fondo</h2>
+            <h2 className="text-2xl font-black mb-6" style={{ color: '#0A0A0A' }}>Fondo de la App</h2>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-bold mb-2" style={{ color: '#0A0A0A' }}>Seleccionar Imagen</label>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#0A0A0A' }}>Seleccionar Imagen o Video</label>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/mp4,video/webm"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const formData = new FormData();
                       formData.append('file', file);
+                      formData.append('type', file.type.startsWith('video/') ? 'video' : 'image');
                       try {
                         const res = await fetch('/api/admin/upload', {
                           method: 'POST',
@@ -1042,18 +1043,18 @@ export default function AdminPage() {
                         const data = await res.json();
                         if (data.success) {
                           setBackgroundImage(data.path + '?t=' + Date.now());
-                          setToast({ message: 'Imagen de fondo actualizada', type: 'success' });
+                          setToast({ message: 'Fondo actualizado', type: 'success' });
                         }
                       } catch (error) {
                         console.error('Error uploading background:', error);
-                        setToast({ message: 'Error al subir imagen', type: 'error' });
+                        setToast({ message: 'Error al subir archivo', type: 'error' });
                       }
                     }
                   }}
                   className="w-full px-4 py-3 border-2 border-gray-500 rounded-lg focus:outline-none focus:border-black font-bold text-lg"
                 />
                 <p className="text-xs text-gray-600 mt-2">
-                  La imagen se aplicará automáticamente en toda la aplicación al seleccionarla
+                  Sube una imagen o video. Los videos se reproducirán en loop sin sonido.
                 </p>
               </div>
             </div>

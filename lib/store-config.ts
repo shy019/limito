@@ -4,6 +4,7 @@ export interface StoreConfig {
   mode: StoreMode;
   passwordUntil: string | null; // ISO date string
   backgroundImage: string;
+  backgroundType?: 'image' | 'video';
 }
 
 const CONFIG_KEY = 'limito_store_config';

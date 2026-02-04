@@ -22,35 +22,43 @@ export async function uploadImage(
 ): Promise<string> {
   const client = getCloudinary();
   
+  // Detectar si es video
+  const isVideo = base64Data.startsWith('data:video/');
+  const resourceType = isVideo ? 'video' : 'image';
+  
   // Si no hay publicId, generar uno basado en hash para evitar duplicados
   const finalPublicId = publicId || generateImageHash(base64Data);
   
-  // Verificar si la imagen ya existe
+  // Verificar si el archivo ya existe
   try {
-    const existing = await client.api.resource(`${folder}/${finalPublicId}`);
+    const existing = await client.api.resource(`${folder}/${finalPublicId}`, { resource_type: resourceType });
     if (existing?.secure_url) {
-      console.log('✅ Imagen ya existe, reutilizando:', existing.secure_url);
+      console.log(`✅ ${isVideo ? 'Video' : 'Imagen'} ya existe, reutilizando:`, existing.secure_url);
       return existing.secure_url;
     }
   } catch {
     // No existe, continuar con upload
   }
   
-  const result = await client.uploader.upload(base64Data, {
+  const uploadOptions: any = {
     folder,
     public_id: finalPublicId,
-    overwrite: false, // No sobrescribir si existe
-    resource_type: 'image',
-    format: 'webp', // Formato optimizado
-    quality: 'auto:good', // Calidad automática
-    fetch_format: 'auto', // Formato automático según navegador
-    transformation: [
-      { width: 1200, height: 1200, crop: 'limit' }, // Máximo 1200x1200
-      { quality: 85 }, // Calidad 85%
-      { fetch_format: 'auto' } // WebP/AVIF automático
-    ]
-  });
+    overwrite: false,
+    resource_type: resourceType,
+  };
+
+  if (!isVideo) {
+    uploadOptions.format = 'webp';
+    uploadOptions.quality = 'auto:good';
+    uploadOptions.fetch_format = 'auto';
+    uploadOptions.transformation = [
+      { width: 1200, height: 1200, crop: 'limit' },
+      { quality: 85 },
+      { fetch_format: 'auto' }
+    ];
+  }
   
+  const result = await client.uploader.upload(base64Data, uploadOptions);
   return result.secure_url;
 }
 
