@@ -1,5 +1,5 @@
 -- Schema para Turso DB
--- Migración desde Google Sheets
+-- Base de datos Turso (SQLite)
 
 -- Tabla de productos
 CREATE TABLE IF NOT EXISTS products (

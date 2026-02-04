@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSignature } from '@/lib/payu';
-import { addOrderToSheets } from '@/lib/turso-orders';
+import { addOrderToTurso } from '@/lib/turso-orders';
 import { logger } from '@/lib/logger';
 import { decryptFromTransit } from '@/lib/server-crypto';
 import { rateLimit } from '@/lib/rate-limit';
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       customerName,
       items,
       subtotal,
-      shippingCost,
+      shipping: shippingCost,
       discount,
       total,
       status: 'pending',
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       shippingAddress,
     };
 
-    const result = await addOrderToSheets(order);
+    const result = await addOrderToTurso(order as any);
 
     if (!result.success) {
       logger.error('Failed to create order', { orderId });

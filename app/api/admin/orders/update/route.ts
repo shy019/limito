@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 
-import { updateOrderInSheets } from '@/lib/turso-orders';
+import { updateOrderInTurso } from '@/lib/turso-orders';
 import { sendTrackingEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (trackingNumber) updates.trackingNumber = trackingNumber;
     if (carrier) updates.carrier = carrier;
     
-    const result = await updateOrderInSheets(orderId, updates);
+    const result = await updateOrderInTurso(orderId, updates);
     
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 404 });

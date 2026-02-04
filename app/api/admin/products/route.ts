@@ -3,7 +3,7 @@ import { rateLimit } from '@/lib/rate-limit';
 
 import type { Product } from '@/lib/products';
 import { revalidatePath } from 'next/cache';
-import { updateProductInSheets, deleteProductFromSheets, addProductToSheets } from '@/lib/turso-products-v2';
+import { updateProductInTurso, deleteProductFromTurso, addProductToTurso } from '@/lib/turso-products-v2';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       newProduct.descriptionEn = newProduct.description;
     }
     
-    const result = await addProductToSheets(newProduct);
+    const result = await addProductToTurso(newProduct);
     
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest) {
       updatedProduct.descriptionEn = updatedProduct.description;
     }
     
-    const result = await updateProductInSheets(updatedProduct);
+    const result = await updateProductInTurso(updatedProduct);
     
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
@@ -62,7 +62,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { id } = await request.json();
     
-    const result = await deleteProductFromSheets(id);
+    const result = await deleteProductFromTurso(id);
     
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });

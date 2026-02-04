@@ -10,12 +10,12 @@ interface StockCache {
 
 const stockCache: StockCache = {};
 const CACHE_TTL = 30000; // 30 segundos
-const pendingFetches = new Map<string, Promise<void>>(); // Deduplicación
+const pendingFetches = new Map<string, Promise<void | undefined>>(); // Deduplicación
 
 export function useAvailableStock(productId: string | null) {
   const [stockMap, setStockMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const fetchStock = useCallback(async (id: string) => {
     const cacheKey = `stock:${id}`;

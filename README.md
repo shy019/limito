@@ -7,9 +7,10 @@ Plataforma de e-commerce para venta de gorras de edición limitada en Colombia.
 - Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS 4
-- Google Sheets (base de datos)
+- Turso (SQLite database)
 - Resend (emails)
 - PayU (pagos)
+- Cloudinary (imágenes)
 
 ## Instalación
 
@@ -31,7 +32,6 @@ npm run dev          # Desarrollo
 npm run build        # Build producción
 npm run test         # Tests unitarios
 npm run test:e2e     # Tests E2E
-npm run setup-sheets # Configurar Google Sheets
 ```
 
 ## Estructura
@@ -50,8 +50,9 @@ app/
 
 lib/
 ├── cart.ts          # Lógica carrito
-├── google-sheets.ts # Conexión Sheets
+├── turso-*.ts       # Operaciones Turso
 ├── payu.ts          # Integración PayU
+├── cloudinary.ts    # Gestión imágenes
 └── email.ts         # Servicio emails
 ```
 

@@ -58,7 +58,7 @@ export async function getOrdersFromTurso() {
   }
 }
 
-export async function addOrderToSheets(order: Order) {
+export async function addOrderToTurso(order: Order) {
   try {
     await getTursoClient().execute({
       sql: `INSERT INTO orders (id, customer_name, customer_email, customer_phone, items, subtotal, shipping, discount, total, status, payu_reference, shipping_address, shipping_city)
@@ -86,7 +86,7 @@ export async function addOrderToSheets(order: Order) {
   }
 }
 
-export async function updateOrderInSheets(orderId: string, updates: Partial<Order>) {
+export async function updateOrderInTurso(orderId: string, updates: Partial<Order>) {
   try {
     const setClauses: string[] = [];
     const args: any[] = [];

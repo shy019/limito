@@ -1,4 +1,4 @@
-// Turso Products - Reemplazo rápido de sheets-products
+// Turso Products - Base de datos SQLite con Turso
 import tursoClient from './turso';
 
 interface ProductColor {

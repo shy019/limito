@@ -1,4 +1,4 @@
-// Turso Products V2 - Con transacciones y precisión 100%
+// Turso Products V2 - Base de datos SQLite con Turso
 import { createClient } from '@libsql/client';
 
 // Crear cliente lazy (solo cuando se necesita)
@@ -348,11 +348,12 @@ export async function getPromoCodesFromTurso(): Promise<SyncResult<PromoCode[]>>
 export async function addPromoCodeToTurso(code: PromoCode): Promise<SyncResult<void>> {
   try {
     const expiresAt = code.expiresAt ? Math.floor(new Date(code.expiresAt).getTime() / 1000) : null;
+    const client = getTursoClient();
     
-    await getTursoClient().execute({
+    await client.execute({
       sql: 'INSERT INTO promo_codes (code, type, value, active, max_uses, current_uses, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      args: [code.code, code.type, code.value, code.active ? 1 : 0, code.maxUses || null, code.currentUses, expiresAt]
-    });
+      args: [code.code, code.type, code.value, code.active ? 1 : 0, code.maxUses || null, code.currentUses || 0, expiresAt]
+    } as any);
     
     return { success: true };
   } catch (error) {
@@ -378,7 +379,7 @@ export async function addPhoneSubscription(phone: string): Promise<SyncResult<vo
 // ============================================================================
 // CRUD DE PRODUCTOS
 // ============================================================================
-export async function addProductToSheets(product: Product): Promise<SyncResult<void>> {
+export async function addProductToTurso(product: Product): Promise<SyncResult<void>> {
   try {
     await getTursoClient().execute({
       sql: `INSERT INTO products (id, name, edition, type, description, description_en, available, features)
@@ -416,7 +417,7 @@ export async function addProductToSheets(product: Product): Promise<SyncResult<v
   }
 }
 
-export async function updateProductInSheets(product: Product): Promise<SyncResult<void>> {
+export async function updateProductInTurso(product: Product): Promise<SyncResult<void>> {
   try {
     await getTursoClient().execute({
       sql: `UPDATE products SET name = ?, edition = ?, type = ?, description = ?, description_en = ?, available = ?, features = ?
@@ -459,7 +460,7 @@ export async function updateProductInSheets(product: Product): Promise<SyncResul
   }
 }
 
-export async function deleteProductFromSheets(productId: string): Promise<SyncResult<void>> {
+export async function deleteProductFromTurso(productId: string): Promise<SyncResult<void>> {
   try {
     await getTursoClient().execute({
       sql: 'DELETE FROM products WHERE id = ?',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSignature, parsePayUResponse, getTransactionStatus } from '@/lib/payu';
-import { updateOrderInSheets } from '@/lib/turso-orders';
+import { updateOrderInTurso } from '@/lib/turso-orders';
 import { logger } from '@/lib/logger';
 import tursoClient from '@/lib/turso';
 import { confirmSaleInTurso, getSettingsFromTurso } from '@/lib/turso-products-v2';
@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
         }
       }
     } else {
-      // Fallback a Sheets
-      const updateResult = await updateOrderInSheets(response.referenceCode, {
+      // Fallback a Turso
+      const updateResult = await updateOrderInTurso(response.referenceCode, {
         status: status === 'approved' ? 'paid' : status,
       });
 

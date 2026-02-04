@@ -27,7 +27,7 @@ export default function Home() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token: userToken }),
             })
-              .then(data => data)
+              .then(res => res.json())
               .then(data => {
                 if (data.valid) {
                   setLoading(false);
