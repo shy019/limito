@@ -47,7 +47,7 @@ interface PromoCode {
   active: boolean;
   expiresAt?: string;
   maxUses?: number;
-  currentUses: number;
+  currentUses?: number;
 }
 
 // ============================================================================

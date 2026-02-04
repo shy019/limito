@@ -29,7 +29,7 @@ export interface PromoCode {
   value: number;
   active: boolean;
   expiresAt?: string;
-  maxUses?: number | null;
+  maxUses?: number;
   currentUses?: number;
 }
 

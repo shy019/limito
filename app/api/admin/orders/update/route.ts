@@ -28,11 +28,11 @@ export async function POST(req: NextRequest) {
       const ordersResult = await import('@/lib/turso-orders').then(m => m.getOrdersFromTurso());
       const order = ordersResult.orders?.find((o: any) => o.id === orderId);
       
-      if (order?.customerEmail) {
+      if (order?.customer_email) {
         await sendTrackingEmail({
-          orderId: order.id,
-          customerEmail: order.customerEmail,
-          trackingNumber,
+          orderId: String(order.id),
+          customerEmail: String(order.customer_email),
+          trackingNumber: String(trackingNumber),
           carrier: carrier || 'Coordinadora',
         });
       }

@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { updateProductInSheets, deleteProductFromSheets, addProductToSheets } from '@/lib/turso-products-v2';
 
 export async function POST(request: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
   if (!rateLimit(`api-${ip}`, 20, 60000).success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
