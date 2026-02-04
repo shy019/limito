@@ -5,7 +5,7 @@
     "newsletter": {
       "title": "Get notified",
       "placeholder": "your@email.com",
-      "button": "NOTIFY ME",
+      "button": "GET ACCESS",
       "success": "✓ Thanks! We'll notify you about the launch",
       "error": "Error subscribing"
     },

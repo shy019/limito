@@ -132,7 +132,7 @@ export default function SoldOutPage() {
                   disabled={submitting}
                   className="w-full bg-[#ffd624] text-black py-5 text-base font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 hover:bg-[#ffed4e] hover:shadow-2xl hover:scale-105 active:scale-95"
                 >
-                  {locale === 'es' ? 'Notificarme del Próximo Drop' : 'Notify Me of Next Drop'}
+                  GET ACCESS
                 </button>
               </form>
             )}
