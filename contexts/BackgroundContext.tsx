@@ -7,9 +7,11 @@ interface BackgroundContextType {
   backgroundImage: string;
   backgroundType: 'image' | 'video';
   staticBackgroundImage: string;
+  accentColor: string;
   setBackgroundImage: (image: string) => void;
   setBackgroundType: (type: 'image' | 'video') => void;
   setStaticBackgroundImage: (image: string) => void;
+  setAccentColor: (color: string) => void;
 }
 
 const BackgroundContext = createContext<BackgroundContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   const [backgroundImage, setBackgroundImage] = useState('');
   const [backgroundType, setBackgroundType] = useState<'image' | 'video'>('image');
   const [staticBackgroundImage, setStaticBackgroundImage] = useState('');
+  const [accentColor, setAccentColor] = useState('#D4AF37');
 
   useEffect(() => {
     let mounted = true;
@@ -34,14 +37,22 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
         if (data.config?.staticBackgroundImage) {
           setStaticBackgroundImage(data.config.staticBackgroundImage);
         }
+        if (data.config?.accentColor) {
+          setAccentColor(data.config.accentColor);
+        }
       })
       .catch(() => {});
     
     return () => { mounted = false; };
   }, []);
 
+  // Aplicar color de acento como CSS variable
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent-color', accentColor);
+  }, [accentColor]);
+
   return (
-    <BackgroundContext.Provider value={{ backgroundImage, backgroundType, staticBackgroundImage, setBackgroundImage, setBackgroundType, setStaticBackgroundImage }}>
+    <BackgroundContext.Provider value={{ backgroundImage, backgroundType, staticBackgroundImage, accentColor, setBackgroundImage, setBackgroundType, setStaticBackgroundImage, setAccentColor }}>
       {children}
     </BackgroundContext.Provider>
   );

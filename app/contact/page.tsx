@@ -101,14 +101,14 @@ export default function ContactoPage() {
           </div>
         </header>
         <div className="max-w-2xl mx-auto px-6 py-12" style={{ paddingRight: '4rem' }}>
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold hover:scale-105 transition-transform mb-8" style={{ color: '#ffd624' }}>
+          <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold hover:scale-105 transition-transform mb-8" style={{ color: 'var(--accent-color, #ffd624)' }}>
             <ArrowLeft className="w-4 h-4" />
             {t('back')}
           </Link>
 
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 md:p-12">
             <div className="text-center mb-8" style={{ paddingLeft: '4rem' }}>
-              <Mail className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4" style={{ color: '#ffd624' }} />
+              <Mail className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4" style={{ color: 'var(--accent-color, #ffd624)' }} />
               <h1 className="text-3xl md:text-5xl font-black mb-2 md:mb-4" style={{ color: '#ffffff' }}>{t('title')}</h1>
               <p className="text-sm md:text-base" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('subtitle')}</p>
             </div>
@@ -243,7 +243,7 @@ export default function ContactoPage() {
                 padding: 7px 35px;
                 border-radius: 60px;
                 display: inline-block;
-                background-color: #ffd624;
+                background-color: var(--accent-color, #ffd624);
                 color: #000000;
                 font-size: 18px;
                 font-weight: bold;
@@ -273,7 +273,7 @@ export default function ContactoPage() {
 
             <div className="mt-8 pt-8 border-t border-white/20 text-center" style={{ marginLeft: '4rem' }}>
               <p className="text-sm font-bold mb-2" style={{ color: '#ffffff' }}>{t('directEmail')}</p>
-              <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hola@limito.co'}`} className="text-lg font-black hover:underline" style={{ color: '#ffd624' }}>
+              <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hola@limito.co'}`} className="text-lg font-black hover:underline" style={{ color: 'var(--accent-color, #ffd624)' }}>
                 {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hola@limito.co'}
               </a>
             </div>

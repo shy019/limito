@@ -38,7 +38,7 @@ export default function Newsletter() {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8">
       <div className="flex items-center gap-3 mb-4">
-        <Mail className="w-6 h-6" style={{ color: '#ffd624' }} />
+        <Mail className="w-6 h-6" style={{ color: 'var(--accent-color, #ffd624)' }} />
         <h3 className="text-2xl font-black" style={{ color: '#ffffff' }}>{t('title')}</h3>
       </div>
       <p className="text-sm mb-6" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>

@@ -195,7 +195,7 @@ export default function CarritoPage() {
         </header>
         <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="text-center space-y-8">
-            <ShoppingBag className="w-24 h-24 mx-auto" style={{ color: '#ffd624' }} />
+            <ShoppingBag className="w-24 h-24 mx-auto" style={{ color: 'var(--accent-color, #ffd624)' }} />
             <h1 className="text-6xl font-black" style={{ color: '#ffffff' }}>{t('empty')}</h1>
             <Link href="/" className="inline-block px-8 uppercase tracking-wider transition-all relative overflow-hidden group" style={{ backgroundColor: '#5433EB', color: '#FFFFFF', fontSize: '1rem', height: '56px', lineHeight: '56px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(84, 51, 235, 0.3)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}>
               <span className="relative z-10">{t('continueShopping')}</span>
@@ -275,11 +275,11 @@ export default function CarritoPage() {
           <div className="grid md:grid-cols-3 gap-12">
             <div className="md:col-span-2 space-y-6">
               {items.map((item) => (
-                <div key={`${item.productId}-${item.color}`} className="bg-white/10 backdrop-blur-md rounded-2xl hover:border-[#ffd624] transition-all cart-item" style={{ border: 'none' }}>
+                <div key={`${item.productId}-${item.color}`} className="bg-white/10 backdrop-blur-md rounded-2xl hover:border-[var(--accent-color, #ffd624)] transition-all cart-item" style={{ border: 'none' }}>
                   <div className="flex gap-6 cart-item-content">
                     <div className="flex-1">
                       <h3 className="text-2xl font-black mb-2" style={{ color: '#ffffff' }}>{item.name}</h3>
-                      <p className="text-sm mb-3" style={{ color: '#ffd624' }}>
+                      <p className="text-sm mb-3" style={{ color: 'var(--accent-color, #ffd624)' }}>
                         {t('color')}: <span className="font-bold">{tCatalog(item.color) || item.color}</span>
                       </p>
                       <p className="text-3xl font-black" style={{ color: '#ffffff' }}>{formatPrice(item.price)}</p>
@@ -297,10 +297,10 @@ export default function CarritoPage() {
                           } else {
                             await cart.updateQuantity(item.productId, item.color, item.quantity - 1);
                           }
-                        }} className="w-8 h-8 flex items-center justify-center rounded-full transition-all" style={{ backgroundColor: '#000000', color: '#ffd624', border: '2px solid #ffd624' }}>
+                        }} className="w-8 h-8 flex items-center justify-center rounded-full transition-all" style={{ backgroundColor: '#000000', color: 'var(--accent-color, #ffd624)', border: '2px solid var(--accent-color, #ffd624)' }}>
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-10 text-center font-black text-xl" style={{ color: '#ffd624' }}>{item.quantity}</span>
+                        <span className="w-10 text-center font-black text-xl" style={{ color: 'var(--accent-color, #ffd624)' }}>{item.quantity}</span>
                         <button
                           onClick={async () => {
                             const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -312,7 +312,7 @@ export default function CarritoPage() {
                           }}
                           disabled={item.quantity >= 5 || items.reduce((sum, i) => sum + i.quantity, 0) >= 5}
                           className="w-8 h-8 flex items-center justify-center rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          style={{ backgroundColor: '#ffd624', color: '#000000' }}
+                          style={{ backgroundColor: 'var(--accent-color, #ffd624)', color: '#000000' }}
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -355,11 +355,11 @@ export default function CarritoPage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-sm">
                     <span style={{ color: '#ffffff' }}>{t('subtotal')}</span>
-                    <span className="font-bold" style={{ color: '#ffd624' }}>{formatPrice(subtotal)}</span>
+                    <span className="font-bold" style={{ color: 'var(--accent-color, #ffd624)' }}>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span style={{ color: '#ffffff' }}>{t('shipping')}</span>
-                    <span className="font-bold" style={{ color: shippingCost === 0 ? '#16A34A' : '#ffd624' }}>
+                    <span className="font-bold" style={{ color: shippingCost === 0 ? '#16A34A' : 'var(--accent-color, #ffd624)' }}>
                       {shippingCost === 0 ? t('free') : formatPrice(shippingCost)}
                     </span>
                   </div>
@@ -372,7 +372,7 @@ export default function CarritoPage() {
                   <div className="border-t-2 pt-4" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                     <div className="flex justify-between text-lg">
                       <span className="font-black" style={{ color: '#ffffff' }}>{t('total')}</span>
-                      <span className="font-black text-3xl" style={{ color: '#ffd624' }}>{formatPrice(total)}</span>
+                      <span className="font-black text-3xl" style={{ color: 'var(--accent-color, #ffd624)' }}>{formatPrice(total)}</span>
                     </div>
                   </div>
                 </div>
@@ -392,7 +392,7 @@ export default function CarritoPage() {
                       <button
                         onClick={handleApplyPromo}
                         className="px-6 py-3 uppercase transition-all relative overflow-hidden group"
-                        style={{ backgroundColor: '#000000', color: '#ffffff', fontSize: '1rem', border: '2px solid #ffd624', borderRadius: '12px', boxShadow: '0 2px 8px rgba(255, 214, 36, 0.2)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}
+                        style={{ backgroundColor: '#000000', color: '#ffffff', fontSize: '1rem', border: '2px solid var(--accent-color, #ffd624)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(255, 214, 36, 0.2)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}
                       >
                         <span className="relative z-10">{t('apply')}</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -461,7 +461,7 @@ export default function CarritoPage() {
       {/* Modal de confirmación */}
       {mounted && showClearModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.8)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ backgroundColor: '#000000', borderRadius: '16px', padding: '2rem', maxWidth: '28rem', margin: '0 1rem', border: '2px solid #ffd624', boxShadow: '0 20px 60px rgba(255, 214, 36, 0.3)', textAlign: 'center' }}>
+          <div style={{ backgroundColor: '#000000', borderRadius: '16px', padding: '2rem', maxWidth: '28rem', margin: '0 1rem', border: '2px solid var(--accent-color, #ffd624)', boxShadow: '0 20px 60px rgba(255, 214, 36, 0.3)', textAlign: 'center' }}>
             <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '1rem', color: '#ffffff' }}>{t('clearConfirm')}</h3>
             <p style={{ fontSize: '0.875rem', marginBottom: '1.5rem', color: 'rgba(255, 255, 255, 0.7)' }}>{t('clearMessage')}</p>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -476,7 +476,7 @@ export default function CarritoPage() {
                   cart.clear();
                   setShowClearModal(false);
                 }}
-                style={{ flex: 1, padding: '0.75rem', fontWeight: 900, textTransform: 'uppercase', borderRadius: '12px', backgroundColor: '#ffd624', color: '#000000', fontSize: '1rem', border: 'none', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '0.75rem', fontWeight: 900, textTransform: 'uppercase', borderRadius: '12px', backgroundColor: 'var(--accent-color, #ffd624)', color: '#000000', fontSize: '1rem', border: 'none', cursor: 'pointer' }}
               >
                 {t('clear')}
               </button>

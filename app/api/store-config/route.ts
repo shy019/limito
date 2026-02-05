@@ -14,7 +14,8 @@ export async function GET() {
         passwordUntil: settings?.password_until || null,
         backgroundImage: settings?.background_image || null,
         backgroundType: settings?.background_type || 'image',
-        staticBackgroundImage: settings?.static_background_image || null
+        staticBackgroundImage: settings?.static_background_image || null,
+        accentColor: settings?.accent_color || '#D4AF37'
       } 
     });
     
@@ -36,7 +37,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { mode, passwordUntil, backgroundImage, backgroundType, staticBackgroundImage } = await request.json();
+    const { mode, passwordUntil, backgroundImage, backgroundType, staticBackgroundImage, accentColor } = await request.json();
     
     await updateSettingInTurso('store_mode', mode, 'admin');
     if (passwordUntil !== undefined) {
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
     }
     if (staticBackgroundImage !== undefined) {
       await updateSettingInTurso('static_background_image', staticBackgroundImage, 'admin');
+    }
+    if (accentColor !== undefined) {
+      await updateSettingInTurso('accent_color', accentColor, 'admin');
     }
     
     const response = NextResponse.json({ success: true });

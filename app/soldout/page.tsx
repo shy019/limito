@@ -92,7 +92,7 @@ export default function SoldOutPage() {
               </p>
             </div>
 
-            <div className="inline-block bg-[#ffd624] text-black px-8 py-4 rounded-full shadow-2xl">
+            <div className="inline-block bg-[var(--accent-color, #ffd624)] text-black px-8 py-4 rounded-full shadow-2xl">
               <p className="text-sm uppercase tracking-[0.3em] font-bold">
                 {locale === 'es' ? 'Próximo Drop' : 'Next Drop'}
               </p>
@@ -130,7 +130,7 @@ export default function SoldOutPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[#ffd624] text-black py-5 text-base font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 hover:bg-[#ffed4e] hover:shadow-2xl hover:scale-105 active:scale-95"
+                  className="w-full bg-[var(--accent-color, #ffd624)] text-black py-5 text-base font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 hover:bg-[#ffed4e] hover:shadow-2xl hover:scale-105 active:scale-95"
                 >
                   {locale === 'es' ? 'OBTENER ACCESO' : 'GET ACCESS'}
                 </button>
@@ -142,7 +142,7 @@ export default function SoldOutPage() {
           <div className="space-y-6">
             <p className="text-gray-300 text-sm">
               {locale === 'es' ? '¿Tienes preguntas? Escríbenos a' : 'Have questions? Write to us at'}{' '}
-              <a href="mailto:hola@limito.co" className="text-[#ffd624] hover:underline font-bold">
+              <a href="mailto:hola@limito.co" className="text-[var(--accent-color, #ffd624)] hover:underline font-bold">
                 hola@limito.co
               </a>
             </p>
@@ -153,7 +153,7 @@ export default function SoldOutPage() {
                 href="https://instagram.com/limito"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-[#ffd624] hover:scale-125 transition-all"
+                className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all"
               >
                 <Instagram className="w-8 h-8" strokeWidth={2.5} />
               </a>
@@ -161,7 +161,7 @@ export default function SoldOutPage() {
                 href="https://youtube.com/@limito"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-[#ffd624] hover:scale-125 transition-all"
+                className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all"
               >
                 <Youtube className="w-8 h-8" strokeWidth={2.5} />
               </a>
@@ -169,7 +169,7 @@ export default function SoldOutPage() {
                 href="https://tiktok.com/@limito"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-[#ffd624] hover:scale-125 transition-all"
+                className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all"
               >
                 <Send className="w-8 h-8" strokeWidth={2.5} />
               </a>

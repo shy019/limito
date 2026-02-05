@@ -174,7 +174,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
             className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: isHovered ? 1 : 0 }}
           >
-            <span className="text-sm font-bold uppercase tracking-widest px-6 py-3" style={{ backgroundColor: '#D4AF37', color: '#000' }}>
+            <span className="text-sm font-bold uppercase tracking-widest px-6 py-3" style={{ backgroundColor: 'var(--accent-color, #D4AF37)', color: '#000' }}>
               {t('viewDetails')}
             </span>
           </div>
@@ -184,15 +184,15 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
               {t('soldOut')}
             </div>
           ) : mainColor.stock < 3 ? (
-            <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: 'transparent', color: '#D4AF37', border: '1px solid #D4AF37' }}>
+            <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: 'transparent', color: 'var(--accent-color, #D4AF37)', border: '1px solid var(--accent-color, #D4AF37)' }}>
               {t('lowStock')}
             </div>
           ) : null}
         </div>
       </div>
       <div className="p-5 transition-all duration-300" style={{ backgroundColor: 'transparent', textAlign: 'right', transform: isHovered ? 'translateY(-5px)' : 'translateY(0)' }}>
-        <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? '#D4AF37' : '#ffffff' }}>{product.name}</h3>
-        <p className="text-3xl md:text-5xl font-black" style={{ color: '#D4AF37' }}>{formatPrice(mainColor.price)}</p>
+        <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? 'var(--accent-color, #D4AF37)' : '#ffffff' }}>{product.name}</h3>
+        <p className="text-3xl md:text-5xl font-black" style={{ color: 'var(--accent-color, #D4AF37)' }}>{formatPrice(mainColor.price)}</p>
       </div>
     </button>
   );
@@ -378,7 +378,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
           <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem', marginTop: 0, color: '#ffffff' }} className="md:text-3xl">{product.name}</h1>
 
           {realAvailableStock > 0 && (
-            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ffd624', marginBottom: '0.75rem' }} className="md:text-2xl">
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-color, #ffd624)', marginBottom: '0.75rem' }} className="md:text-2xl">
               {formatPrice(currentColor.price)}
             </div>
           )}
@@ -388,7 +388,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
               {t('soldOut')}
             </div>
           ) : realAvailableStock < 3 ? (
-            <div style={{ padding: '0.5rem 1rem', backgroundColor: '#ffd624', color: '#000000', display: 'inline-block', marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 'bold' }}>
+            <div style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--accent-color, #ffd624)', color: '#000000', display: 'inline-block', marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 'bold' }}>
               {t('lowStock')}
             </div>
           ) : null}
@@ -413,7 +413,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                     width: '2.5rem',
                     height: '2.5rem',
                     borderRadius: '50%',
-                    border: selectedColor === idx ? '3px solid #ffd624' : '2px solid rgba(255, 255, 255, 0.3)',
+                    border: selectedColor === idx ? '3px solid var(--accent-color, #ffd624)' : '2px solid rgba(255, 255, 255, 0.3)',
                     backgroundColor: color.hex,
                     cursor: 'pointer',
                     display: 'flex',
@@ -433,7 +433,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#ffffff', marginBottom: '0.5rem' }}>
               {t('quantity')}
               {cartQuantity > 0 && (
-                <span style={{ marginLeft: '0.5rem', color: '#ffd624', fontSize: '0.75rem' }}>({cartQuantity} {t('inCart')})</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--accent-color, #ffd624)', fontSize: '0.75rem' }}>({cartQuantity} {t('inCart')})</span>
               )}
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', padding: '4px', backgroundColor: 'rgba(255, 255, 255, 0.05)', width: 'fit-content', opacity: realAvailableStock === 0 ? 0.5 : 1 }}>
@@ -527,7 +527,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                 color: '#ffffff',
                 fontWeight: 'bold',
                 fontSize: '0.875rem',
-                border: '2px solid #ffd624',
+                border: '2px solid var(--accent-color, #ffd624)',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 marginBottom: '0.75rem',
@@ -542,7 +542,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
               <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
                 {product.features.map((feature) => (
                   <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <Check className="w-4 h-4" style={{ color: '#ffd624' }} />
+                    <Check className="w-4 h-4" style={{ color: 'var(--accent-color, #ffd624)' }} />
                     <span style={{ fontSize: '0.875rem', color: '#ffffff' }}>{feature}</span>
                   </div>
                 ))}

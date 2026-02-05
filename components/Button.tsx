@@ -19,14 +19,14 @@ export default function Button({
 }: ButtonProps) {
   const styles = {
     primary: {
-      backgroundColor: '#ffd624',
+      backgroundColor: 'var(--accent-color, #ffd624)',
       color: '#000000',
       border: 'none'
     },
     secondary: {
       backgroundColor: '#000000',
       color: '#ffffff',
-      border: '2px solid #ffd624'
+      border: '2px solid var(--accent-color, #ffd624)'
     },
     danger: {
       backgroundColor: '#ff0000',

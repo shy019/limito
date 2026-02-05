@@ -80,7 +80,7 @@ export default function AnimatedButton({ text, onClick, disabled = false, fullWi
       <div
         ref={containerRef}
         style={{
-          background: disabled ? '#666666' : '#D4AF37',
+          background: disabled ? '#666666' : 'var(--accent-color, var(--accent-color, #D4AF37))',
           height: animationPhase >= 2 ? '8px' : '40px',
           width: animationPhase >= 4 ? '0' : (fullWidth ? '100%' : '200px'),
           textAlign: 'center',
@@ -129,7 +129,7 @@ export default function AnimatedButton({ text, onClick, disabled = false, fullWi
           left: '50%',
           borderRadius: animationPhase >= 4 ? '40px' : '200px',
           transform: 'translateY(-50%) translateX(-50%)',
-          background: '#D4AF37',
+          background: 'var(--accent-color, var(--accent-color, #D4AF37))',
           transition: animationPhase >= 4 ? 'all 0.4s ease 0.1s' : 'width 0.4s ease',
           pointerEvents: 'none'
         }}

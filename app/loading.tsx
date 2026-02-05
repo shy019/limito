@@ -27,7 +27,7 @@ export default function Loading() {
         width: '60px',
         height: '60px',
         border: '4px solid #333333',
-        borderTop: '4px solid #ffd624',
+        borderTop: '4px solid var(--accent-color, #ffd624)',
         borderRadius: '50%'
       }} />
     </div>

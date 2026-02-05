@@ -7,7 +7,7 @@ export default function PendingPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0A0A' }}>
       <div style={{ textAlign: 'center', maxWidth: '500px', padding: '3rem' }}>
-        <Clock className="w-24 h-24 mx-auto mb-6" style={{ color: '#ffd624' }} />
+        <Clock className="w-24 h-24 mx-auto mb-6" style={{ color: 'var(--accent-color, #ffd624)' }} />
         <h1 className="text-5xl font-black mb-4" style={{ color: '#ffffff' }}>Pago Pendiente</h1>
         <p className="text-lg mb-8" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
           Tu pago está siendo procesado. Te notificaremos por email cuando se confirme.

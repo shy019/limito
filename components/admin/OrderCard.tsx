@@ -20,9 +20,9 @@ export default function OrderCard({ order, onUpdate }: OrderCardProps) {
             onChange={(e) => onUpdate(order.id, { status: e.target.value as Order['status'] })}
             className="mt-2 px-3 py-1 text-sm font-bold rounded-lg border-2"
             style={{
-              borderColor: order.status === 'pending' ? '#ffd624' : order.status === 'shipped' ? '#5433EB' : '#16A34A',
+              borderColor: order.status === 'pending' ? 'var(--accent-color, #ffd624)' : order.status === 'shipped' ? '#5433EB' : '#16A34A',
               color: order.status === 'pending' ? '#000' : '#fff',
-              backgroundColor: order.status === 'pending' ? '#ffd624' : order.status === 'shipped' ? '#5433EB' : '#16A34A'
+              backgroundColor: order.status === 'pending' ? 'var(--accent-color, #ffd624)' : order.status === 'shipped' ? '#5433EB' : '#16A34A'
             }}
           >
             <option value="pending">Pendiente</option>

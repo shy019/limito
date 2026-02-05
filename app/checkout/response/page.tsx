@@ -41,7 +41,7 @@ export default function PayUResponsePage() {
     },
     pending: {
       icon: Clock,
-      color: '#ffd624',
+      color: 'var(--accent-color, #ffd624)',
       title: t('pending.title'),
       message: t('pending.message'),
       buttonText: t('pending.button'),

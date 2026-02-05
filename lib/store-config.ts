@@ -6,6 +6,7 @@ export interface StoreConfig {
   backgroundImage: string;
   backgroundType?: 'image' | 'video';
   staticBackgroundImage?: string; // Imagen estática para catalog/cart/product
+  accentColor?: string; // Color de acento dinámico
 }
 
 const CONFIG_KEY = 'limito_store_config';

@@ -29,8 +29,8 @@ function LanguageSelector() {
       className="fixed bottom-6 right-6 z-[100] hover:scale-110 transition-all flex items-center justify-center gap-2 font-black uppercase"
       style={{
         backgroundColor: '#000000',
-        color: '#ffd624',
-        border: '2px solid #ffd624',
+        color: 'var(--accent-color, #ffd624)',
+        border: '2px solid var(--accent-color, #ffd624)',
         borderRadius: '12px',
         padding: '12px 20px',
         boxShadow: '0 4px 12px rgba(255, 214, 36, 0.3)',

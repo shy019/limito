@@ -38,7 +38,7 @@ export default function LoadingScreen() {
           <div style={{
             width: '50%',
             height: '100%',
-            backgroundColor: '#ffd624',
+            backgroundColor: 'var(--accent-color, #ffd624)',
             animation: 'loading 1.5s ease-in-out infinite'
           }} />
         </div>

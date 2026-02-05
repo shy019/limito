@@ -451,7 +451,7 @@ export default function AdminPage() {
       '#ff00ff': 'Magenta',
       '#00ced1': 'Turquesa',
       '#20b2aa': 'Verde Agua',
-      '#ffd624': 'Amarillo Limito',
+      'var(--accent-color, #ffd624)': 'Amarillo Limito',
     };
 
     const normalized = hex.toLowerCase();
@@ -732,7 +732,7 @@ export default function AdminPage() {
                                 setEditForm({ ...editForm, colors: [...editForm.colors, newColor] });
                               }
                             }}
-                            className="px-6 py-3 bg-[#ffd624] text-black text-sm font-black rounded-lg hover:bg-[#ffed4e] transition-all"
+                            className="px-6 py-3 bg-[var(--accent-color, #ffd624)] text-black text-sm font-black rounded-lg hover:bg-[#ffed4e] transition-all"
                           >
                             + Añadir Color
                           </button>
@@ -856,7 +856,7 @@ export default function AdminPage() {
                                   <div key={idx} className="relative aspect-square rounded-lg border-2 border-gray-200 hover:border-black transition-all group" style={{ minHeight: '80px' }}>
                                     <Image src={img} alt={`${color.name} ${idx + 1}`} fill className="object-cover rounded-lg" loading="lazy" sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw" unoptimized />
                                     <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-black/60 backdrop-blur-sm rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                      <label className="flex-1 h-10 bg-[#ffd624] rounded-lg flex items-center justify-center cursor-pointer hover:bg-[#ffed4e] transition-all shadow-lg">
+                                      <label className="flex-1 h-10 bg-[var(--accent-color, #ffd624)] rounded-lg flex items-center justify-center cursor-pointer hover:bg-[#ffed4e] transition-all shadow-lg">
                                         <Upload className="w-5 h-5 text-black" />
                                         <input
                                           id={`replace-image-${colorIdx}-${idx}`}
@@ -996,7 +996,7 @@ export default function AdminPage() {
               <h3 className="text-lg font-black mb-4" style={{ color: '#0A0A0A' }}>Estado Actual</h3>
               <div className="flex items-center gap-3">
                 <div className={`w-4 h-4 rounded-full ${
-                  storeMode === 'password' ? 'bg-[#ffd624]' : 
+                  storeMode === 'password' ? 'bg-[var(--accent-color, #ffd624)]' : 
                   storeMode === 'active' ? 'bg-[#16A34A]' : 'bg-[#DC2626]'
                 } animate-pulse`}></div>
                 <p className="text-base font-bold" style={{ color: '#0A0A0A' }}>
@@ -1130,6 +1130,39 @@ export default function AdminPage() {
                   • Si NO subes nada aquí y subiste video arriba: se usa el primer frame del video<br/>
                   • Si subes imagen aquí: se usa esta imagen personalizada en catalog/cart/product
                 </p>
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: '#0A0A0A' }}>3. Color de Acento</label>
+                <div className="flex gap-4 items-center">
+                  <input
+                    type="color"
+                    defaultValue="var(--accent-color, #D4AF37)"
+                    onChange={async (e) => {
+                      const color = e.target.value;
+                      try {
+                        const res = await fetch('/api/store-config', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                            mode: 'password',
+                            accentColor: color
+                          }),
+                        });
+                        if (res.ok) {
+                          document.documentElement.style.setProperty('--accent-color', color);
+                          setToast({ message: 'Color actualizado', type: 'success' });
+                        }
+                      } catch (error) {
+                        console.error('Error updating color:', error);
+                        setToast({ message: 'Error al actualizar color', type: 'error' });
+                      }
+                    }}
+                    className="w-20 h-12 border-2 border-gray-500 rounded-lg cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Este color se usa en botones, hovers, badges y elementos destacados
+                  </span>
+                </div>
               </div>
             </div>
           </div>

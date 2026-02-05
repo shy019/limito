@@ -86,3 +86,10 @@ export function optimizeCloudinaryUrl(url: string, width?: number, height?: numb
   
   return url.replace('/upload/', `/upload/${transformations}/`);
 }
+
+// Extraer color dominante simple (placeholder - en producción usar librería)
+export function extractDominantColor(imageUrl: string): string {
+  // Por ahora retornamos el color por defecto
+  // En producción, usarías 'colorthief' o similar en el cliente
+  return '#D4AF37';
+}

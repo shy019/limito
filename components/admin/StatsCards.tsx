@@ -24,7 +24,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
       </div>
       <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-lg">
         <div className="flex items-center gap-3 mb-2">
-          <Package className="w-6 h-6" style={{ color: '#ffd624' }} />
+          <Package className="w-6 h-6" style={{ color: 'var(--accent-color, #ffd624)' }} />
           <h3 className="text-sm font-bold" style={{ color: '#6B6B6B' }}>Pendientes</h3>
         </div>
         <p className="text-4xl font-black" style={{ color: '#0A0A0A' }}>{stats.pendingOrders}</p>

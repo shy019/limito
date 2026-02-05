@@ -1,4 +1,4 @@
-export default function Spinner({ size = 24, color = '#ffd624' }: { size?: number; color?: string }) {
+export default function Spinner({ size = 24, color = 'var(--accent-color, #ffd624)' }: { size?: number; color?: string }) {
   return (
     <div style={{
       width: `${size}px`,

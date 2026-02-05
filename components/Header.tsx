@@ -20,7 +20,7 @@ export default function Header({ locale, onLanguageToggle, cartCount = 0, showCa
             <Link href="/cart" className="relative rounded-full w-12 h-12 shadow-lg flex items-center justify-center hover:scale-110 transition-transform" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
               <ShoppingCart className="w-6 h-6 pointer-events-none" style={{ color: '#ffffff' }} />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black pointer-events-none" style={{ backgroundColor: '#D4AF37', color: '#000000' }}>
+                <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black pointer-events-none" style={{ backgroundColor: 'var(--accent-color, var(--accent-color, #D4AF37))', color: '#000000' }}>
                   {cartCount}
                 </span>
               )}
