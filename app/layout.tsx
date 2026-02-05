@@ -51,9 +51,35 @@ export default async function RootLayout({
   const messages = await getMessages();
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebsiteSchema();
+  
+  // Cargar color de acento del servidor
+  let accentColor = '#D4AF37';
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/store-config`, { cache: 'no-store' });
+    const data = await res.json();
+    accentColor = data.config?.accentColor || '#D4AF37';
+  } catch (e) {
+    // Usar default si falla
+  }
+  
+  // Convertir a RGB
+  const hex = accentColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
 
   return (
-    <html lang={locale} style={{ margin: 0, padding: 0, backgroundColor: 'transparent' }}>
+    <html lang={locale} style={{ 
+      margin: 0, 
+      padding: 0, 
+      backgroundColor: 'transparent',
+      '--accent-color': accentColor,
+      '--accent-color-rgb': `${r}, ${g}, ${b}`,
+      '--accent-glow-strong': `rgba(${r}, ${g}, ${b}, 0.75)`,
+      '--accent-glow-weak': `rgba(${r}, ${g}, ${b}, 0.5)`,
+      '--accent-glow-light': `rgba(${r}, ${g}, ${b}, 0.2)`
+    } as React.CSSProperties}>
       <head>
         <script
           type="application/ld+json"
