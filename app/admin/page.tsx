@@ -1148,8 +1148,11 @@ export default function AdminPage() {
                             mode: 'password',
                             accentColor: color
                           }),
+                          cache: 'no-store'
                         });
                         if (res.ok) {
+                          // Forzar recarga del cache
+                          await fetch('/api/store-config?t=' + Date.now(), { cache: 'no-store' });
                           setToast({ message: 'Color actualizado', type: 'success' });
                         }
                       } catch (error) {
