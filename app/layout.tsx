@@ -7,6 +7,7 @@ import GoogleAnalytics from '@/components/GoogleAnalytics';
 import GlobalLoader from '@/components/GlobalLoader';
 import { BackgroundProvider } from '@/contexts/BackgroundContext';
 import { generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo';
+import { getSettingsFromTurso } from '@/lib/turso-products-v2';
 import "./globals.css";
 
 const barlow = Barlow({ 
@@ -52,13 +53,11 @@ export default async function RootLayout({
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebsiteSchema();
   
-  // Cargar color de acento del servidor
+  // Cargar color de acento directamente desde la BD
   let accentColor = '#D4AF37';
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const res = await fetch(`${baseUrl}/api/store-config`, { cache: 'no-store' });
-    const data = await res.json();
-    accentColor = data.config?.accentColor || '#D4AF37';
+    const settings = await getSettingsFromTurso();
+    accentColor = settings?.accent_color || '#D4AF37';
   } catch (e) {
     // Usar default si falla
   }
