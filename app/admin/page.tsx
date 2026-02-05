@@ -1145,18 +1145,14 @@ export default function AdminPage() {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ 
-                            mode: storeMode,
                             accentColor: color
                           }),
                           cache: 'no-store'
                         });
                         if (res.ok) {
-                          // Forzar recarga del cache
                           await fetch('/api/store-config?t=' + Date.now(), { cache: 'no-store' });
                           setToast({ message: 'Color actualizado', type: 'success' });
                         } else {
-                          const data = await res.json();
-                          console.error('Error response:', data);
                           setToast({ message: 'Error al actualizar color', type: 'error' });
                         }
                       } catch (error) {
