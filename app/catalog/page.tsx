@@ -160,13 +160,12 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)', transform: isHovered ? 'translateY(-8px)' : 'translateY(0)' }}>
         <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'transparent' }}>
           <ResponsiveProductImage
-            src={isHovered && hoverImage ? hoverImage : mainImage}
+            src={mainImage}
             alt={product.name}
             width={800}
             height={800}
             loading="eager"
-            className="w-full h-full object-cover transition-transform duration-500"
-            style={{ transform: isHovered ? 'scale(1.08)' : 'scale(1)' }}
+            className="w-full h-full object-cover"
           />
 
           {/* Overlay */}
