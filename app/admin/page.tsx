@@ -15,7 +15,7 @@ import AdvancedSettings from '@/components/admin/AdvancedSettings';
 import { useBackground } from '@/contexts/BackgroundContext';
 
 export default function AdminPage() {
-  const { setBackgroundImage, accentColor, setAccentColor } = useBackground();
+  const { setBackgroundImage } = useBackground();
   const [authenticated, setAuthenticated] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [password, setPassword] = useState('');
@@ -1136,24 +1136,21 @@ export default function AdminPage() {
                 <div className="flex gap-4 items-center">
                   <input
                     type="color"
-                    value={accentColor}
+                    defaultValue="var(--accent-color, #D4AF37)"
                     onChange={async (e) => {
                       const color = e.target.value;
-                      setAccentColor(color);
                       try {
                         const res = await fetch('/api/store-config', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ 
+                            mode: 'password',
                             accentColor: color
                           }),
-                          cache: 'no-store'
                         });
                         if (res.ok) {
-                          await fetch('/api/store-config?t=' + Date.now(), { cache: 'no-store' });
+                          document.documentElement.style.setProperty('--accent-color', color);
                           setToast({ message: 'Color actualizado', type: 'success' });
-                        } else {
-                          setToast({ message: 'Error al actualizar color', type: 'error' });
                         }
                       } catch (error) {
                         console.error('Error updating color:', error);

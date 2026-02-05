@@ -39,9 +39,7 @@ export async function POST(request: Request) {
   try {
     const { mode, passwordUntil, backgroundImage, backgroundType, staticBackgroundImage, accentColor } = await request.json();
     
-    if (mode !== undefined) {
-      await updateSettingInTurso('store_mode', mode, 'admin');
-    }
+    await updateSettingInTurso('store_mode', mode, 'admin');
     if (passwordUntil !== undefined) {
       await updateSettingInTurso('password_until', passwordUntil ? new Date(passwordUntil).toISOString() : '', 'admin');
     }
@@ -58,11 +56,8 @@ export async function POST(request: Request) {
       await updateSettingInTurso('accent_color', accentColor, 'admin');
     }
     
-    const settings = await getSettingsFromTurso();
-    const currentMode = mode || settings.store_mode || 'password';
-    
     const response = NextResponse.json({ success: true });
-    response.cookies.set('store_mode', currentMode, {
+    response.cookies.set('store_mode', mode, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
