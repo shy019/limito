@@ -55,7 +55,12 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
+    
+    // Crear variables CSS con los valores rgba completos
     document.documentElement.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
+    document.documentElement.style.setProperty('--accent-glow-strong', `rgba(${r}, ${g}, ${b}, 0.75)`);
+    document.documentElement.style.setProperty('--accent-glow-weak', `rgba(${r}, ${g}, ${b}, 0.5)`);
+    document.documentElement.style.setProperty('--accent-glow-light', `rgba(${r}, ${g}, ${b}, 0.2)`);
   }, [accentColor]);
 
   return (

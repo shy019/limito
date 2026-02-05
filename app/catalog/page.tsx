@@ -141,8 +141,6 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       className="group cursor-pointer w-full text-left product-card relative transform transition-all duration-300 active:scale-[0.98]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onTouchStart={() => setIsHovered(true)}
-      onTouchEnd={() => setTimeout(() => setIsHovered(false), 150)}
       onClick={onClick}
       type="button"
       style={{ backgroundColor: 'transparent', border: 'none' }}
@@ -154,7 +152,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
         transform: 'translate(-50%, -50%)',
         backgroundColor: 'transparent',
         transition: 'all 0.3s ease-in-out',
-        boxShadow: isHovered ? '1px 3px 124px 98px rgba(var(--accent-color-rgb, 212, 175, 55), 0.75)' : '1px 3px 5px -1px rgba(var(--accent-color-rgb, 212, 175, 55), 0.75)',
+        boxShadow: isHovered ? '1px 3px 124px 98px var(--accent-glow-strong)' : '1px 3px 5px -1px var(--accent-glow-strong)',
         pointerEvents: 'none'
       }}><span></span></div>
       <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)', transform: isHovered ? 'translateY(-8px)' : 'translateY(0)' }}>
