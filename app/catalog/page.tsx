@@ -147,7 +147,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       type="button"
       style={{ backgroundColor: 'transparent', border: 'none' }}
     >
-      <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)', transform: isHovered ? 'translateY(-8px)' : 'translateY(0)' }}>
+      <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
         <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'transparent' }}>
           <ResponsiveProductImage
             src={isHovered && hoverImage ? hoverImage : mainImage}
@@ -156,7 +156,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
             height={800}
             loading="eager"
             className="w-full h-full object-cover transition-transform duration-500"
-            style={{ transform: isHovered ? 'scale(1.08)' : 'scale(1)' }}
+            style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
           />
 
           {/* Overlay */}
@@ -180,7 +180,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
           ) : null}
         </div>
       </div>
-      <div className="p-5 transition-all duration-300" style={{ backgroundColor: 'transparent', textAlign: 'right', transform: isHovered ? 'translateY(-5px)' : 'translateY(0)' }}>
+      <div className="p-5" style={{ backgroundColor: 'transparent', textAlign: 'right' }}>
         <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? 'var(--accent-color, #D4AF37)' : '#ffffff' }}>{product.name}</h3>
         <p className="text-3xl md:text-5xl font-black" style={{ color: 'var(--accent-color, #D4AF37)' }}>{formatPrice(mainColor.price)}</p>
       </div>
