@@ -1,10 +1,8 @@
 'use client';
 import { fetchStoreConfig } from '@/lib/store-config-cache';
-
-
 import { useState, useEffect, useRef } from 'react';
-import { Instagram, MessageCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import LoadingScreen from '@/components/LoadingScreen';
 import Toast from '@/components/Toast';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -418,7 +416,11 @@ export default function PasswordPage() {
       )}
 
       <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
-        <div className="w-full space-y-2" style={{ maxWidth: '300px', marginTop: window.innerWidth >= 1024 ? '50%' : window.innerWidth >= 768 ? '30%' : '50%' }}>
+        <div className="w-full space-y-2" style={{ maxWidth: '300px' }}>
+
+          <div style={{ maxWidth: '300px', margin: '0 auto 30px', animationDelay: '0.1s', textAlign: 'center' }} className="animate-slide-up">
+            <Image src="/images/logo.png" alt="Logo" width={250} height={61} style={{ margin: '0 auto', width: '250px', height: 'auto' }} priority unoptimized />
+          </div>
 
           <div style={{ maxWidth: '300px', margin: '0 auto', animationDelay: '0.2s', position: 'relative', zIndex: isOpen ? 99999 : 'auto' }} className="animate-slide-up">
             {phoneSuccess ? (

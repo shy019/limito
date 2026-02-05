@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getSettingsFromTurso, updateSettingInTurso, getPromoCodesFromTurso, addPromoCodeToTurso } from '@/lib/turso-products-v2';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '@/lib/password';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/rate-limit';
 import type { PromoCode } from '@/types/admin';
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
     const { admin_password, promo_password, action, code, type, value, expiresAt } = body;
     
     if (admin_password) {
-      const hashed = await bcrypt.hash(admin_password, 10);
+      const hashed = await hashPassword(admin_password);
       await updateSettingInTurso('admin_password', hashed, 'admin');
       logger.info('Admin password updated');
     }
     
     if (promo_password) {
-      const hashed = await bcrypt.hash(promo_password, 10);
+      const hashed = await hashPassword(promo_password);
       await updateSettingInTurso('promo_password', hashed, 'admin');
       logger.info('Promo password updated');
     }

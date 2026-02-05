@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
 
 interface ResponsiveProductImageProps {
   src: string;
@@ -28,35 +27,10 @@ export default function ResponsiveProductImage({
   sizes,
   loading
 }: ResponsiveProductImageProps) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Determinar la ruta de la imagen según el dispositivo
-  const getImageSrc = () => {
-    if (!src.includes('/images/products/')) return src;
-    
-    // Si ya tiene -desktop o -mobile, usar tal cual
-    if (src.includes('-desktop.webp') || src.includes('-mobile.webp')) {
-      return src;
-    }
-    
-    // Agregar sufijo según dispositivo
-    const suffix = isMobile ? '-mobile.webp' : '-desktop.webp';
-    return src.replace('.webp', suffix);
-  };
-
-  const imageSrc = getImageSrc();
-
   if (fill) {
     return (
       <Image
-        src={imageSrc}
+        src={src}
         alt={alt}
         fill
         className={className}
@@ -71,7 +45,7 @@ export default function ResponsiveProductImage({
 
   return (
     <Image
-      src={imageSrc}
+      src={src}
       alt={alt}
       width={width || 800}
       height={height || 800}

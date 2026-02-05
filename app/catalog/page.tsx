@@ -18,10 +18,12 @@ import SessionMonitor from '@/components/SessionMonitor';
 import { useProducts } from '@/hooks/useProducts';
 import { useStoreConfig } from '@/hooks/useStoreConfig';
 import { useAvailableStock } from '@/hooks/useAvailableStock';
+import { useTokenRenewal } from '@/hooks/useTokenRenewal';
 
 export default function CatalogoPage() {
   const { products, loading: productsLoading, loadProducts } = useProducts();
   const { config, loading: configLoading } = useStoreConfig();
+  useTokenRenewal();
   const [locale, setLocale] = useState('es');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartCount, setCartCount] = useState(0);
@@ -86,13 +88,13 @@ export default function CatalogoPage() {
         />
 
         {!selectedProduct && (
-          <main style={{ flex: 1, width: '70%', margin: '0 auto', padding: '2rem 1.5rem', paddingTop: '120px' }} className="md:py-16">
+          <main style={{ flex: 1, width: '90%', margin: '0 auto', padding: '2rem 1.5rem', paddingTop: '120px' }} className="md:py-16 md:w-[70%]">
             <div className="mb-8 md:mb-12 text-center">
               <h1 className="text-3xl md:text-6xl font-black mb-2 md:mb-4" style={{ color: '#ffffff' }}>{t('title')}</h1>
               <p className="text-base md:text-xl font-medium" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>{t('subtitle')}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
               {products.filter(p => p.id).map((product) => (
                 <ProductCard key={`${product.id}-${cartCount}`} product={product} onClick={() => {
                   setSelectedProduct(product);
@@ -352,7 +354,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                 alt={product.name}
                 width={800}
                 height={800}
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 priority
                 loading="eager"
               />
@@ -365,7 +367,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                   className="aspect-square overflow-hidden"
                   style={{ border: idx === selectedImage ? '2px solid #000' : '2px solid #ddd', backgroundColor: 'transparent' }}
                 >
-                  <Image src={img.replace('.webp', '-desktop.webp')} alt="" width={200} height={200} className="w-full h-full object-cover" />
+                  <Image src={img} alt="" width={200} height={200} className="w-full h-full object-cover" unoptimized />
                 </button>
               ))}
             </div>

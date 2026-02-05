@@ -20,13 +20,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ access: false }, { status: 401 });
     }
 
-    const token = createAdminToken();
+    const token = await createAdminToken();
     const response = NextResponse.json({ access: true });
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 15, // 15 minutos
       path: '/'
     });
     return response;

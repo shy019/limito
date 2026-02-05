@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -6,31 +6,37 @@ if (!SECRET) {
   throw new Error('JWT_SECRET must be defined in environment variables');
 }
 
-const JWT_SECRET: string = SECRET;
+const getSecretKey = () => new TextEncoder().encode(SECRET);
 
-// User access token expires in 5 minutes
-export function createAccessToken(): string {
-  return jwt.sign({ access: true }, JWT_SECRET, { expiresIn: '5m' });
+// User access token expires in 1 hour
+export async function createAccessToken(): Promise<string> {
+  return await new SignJWT({ access: true })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('1h')
+    .sign(getSecretKey());
 }
 
-// Admin token expires in 7 days
-export function createAdminToken(): string {
-  return jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+// Admin token expires in 15 minutes
+export async function createAdminToken(): Promise<string> {
+  return await new SignJWT({ role: 'admin' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('15m')
+    .sign(getSecretKey());
 }
 
-export function verifyAccessToken(token: string): boolean {
+export async function verifyAccessToken(token: string): Promise<boolean> {
   try {
-    jwt.verify(token, JWT_SECRET);
+    await jwtVerify(token, getSecretKey());
     return true;
   } catch {
     return false;
   }
 }
 
-export function verifyAdminToken(token: string): boolean {
+export async function verifyAdminToken(token: string): Promise<boolean> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { role: string };
-    return decoded.role === 'admin';
+    const { payload } = await jwtVerify(token, getSecretKey());
+    return payload.role === 'admin';
   } catch {
     return false;
   }

@@ -15,10 +15,12 @@ import LoadingScreen from '@/components/LoadingScreen';
 import Header from '@/components/Header';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
 import { useStoreConfig } from '@/hooks/useStoreConfig';
+import { useTokenRenewal } from '@/hooks/useTokenRenewal';
 import { apiCache } from '@/lib/api-cache';
 
 export default function CarritoPage() {
   const { config, loading: configLoading } = useStoreConfig();
+  useTokenRenewal();
   const [items, setItems] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
@@ -78,7 +80,10 @@ export default function CarritoPage() {
 
     const handleUpdate = () => setItems(cart.get());
     window.addEventListener('cart-updated', handleUpdate);
-    return () => window.removeEventListener('cart-updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('cart-updated', handleUpdate);
+    };
   }, []);
 
 

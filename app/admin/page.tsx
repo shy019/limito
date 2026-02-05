@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'config' | 'access' | 'promos' | 'settings'>('orders');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
+  const [pendingImages, setPendingImages] = useState<Record<string, string[]>>({});
 
   const [storeMode, setStoreMode] = useState<StoreMode>('password');
   const [passwordUntil, setPasswordUntil] = useState('');
@@ -88,6 +89,25 @@ export default function AdminPage() {
     
     validate();
   }, []);
+
+  // Renovar token cada 5 minutos mientras el usuario esté activo
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const renewToken = async () => {
+      try {
+        await fetch('/api/admin/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (err) {
+        console.error('Token renewal error:', err);
+      }
+    };
+
+    const interval = setInterval(renewToken, 5 * 60 * 1000); // Cada 5 minutos
+    return () => clearInterval(interval);
+  }, [authenticated]);
 
   // Recargar códigos cuando cambies a esas tabs
   useEffect(() => {
@@ -194,6 +214,7 @@ export default function AdminPage() {
   };
 
   const cancelEdit = () => {
+    setPendingImages({});
     setEditingProduct(null);
     setEditForm({});
   };
@@ -244,13 +265,45 @@ export default function AdminPage() {
     }
 
     try {
+      // Subir imágenes pendientes a Cloudinary
+      const updatedColors = [...(editForm.colors || [])];
+      for (const [key, base64Array] of Object.entries(pendingImages)) {
+        const [colorIdx, imgIdx] = key.split('-').map(Number);
+        const base64 = base64Array[0];
+        
+        if (base64.startsWith('data:image')) {
+          const res = await fetch('/api/admin/images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'upload',
+              productId: editForm.id,
+              colorName: updatedColors[colorIdx].name,
+              index: imgIdx + 1,
+              base64Image: base64
+            })
+          });
+          
+          const data = await res.json();
+          if (data.success) {
+            updatedColors[colorIdx].images[imgIdx] = data.path;
+          }
+        }
+      }
+      
+      // Limpiar imágenes pendientes
+      setPendingImages({});
+      
+      // Actualizar editForm con URLs de Cloudinary
+      const finalForm = { ...editForm, colors: updatedColors };
+
       // Verificar si es nuevo: debe tener ID temporal Y no existir en la lista de productos
-      const isNew = editForm.id?.startsWith('limito-new-') && !products.find(p => p.id === editForm.id);
+      const isNew = finalForm.id?.startsWith('limito-new-') && !products.find(p => p.id === finalForm.id);
 
       const saveRes = await fetch('/api/admin/products', {
         method: isNew ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(finalForm),
       });
 
       if (!saveRes.ok) {
@@ -293,29 +346,16 @@ export default function AdminPage() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       if ('colors' in editForm && Array.isArray(editForm.colors)) {
-        try {
-          const res = await fetch('/api/admin/images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'upload',
-              productId: editForm.id,
-              colorName: editForm.colors[colorIdx].name,
-              index: imgIdx + 1,
-              base64Image: reader.result as string
-            })
-          });
-
-          const data = await res.json();
-          if (data.success) {
-            const newColors = [...editForm.colors];
-            newColors[colorIdx].images[imgIdx] = data.path;
-            setEditForm({ ...editForm, colors: newColors });
-          }
-        } catch (error) {
-          console.error('Error uploading image:', error);
-          setToast({ message: 'Error al subir imagen', type: 'error' });
-        }
+        const base64 = reader.result as string;
+        const key = `${colorIdx}-${imgIdx}`;
+        
+        // Guardar base64 en estado temporal
+        setPendingImages(prev => ({ ...prev, [key]: [base64] }));
+        
+        // Actualizar preview en el formulario
+        const newColors = [...editForm.colors];
+        newColors[colorIdx].images[imgIdx] = base64;
+        setEditForm({ ...editForm, colors: newColors });
       }
     };
     reader.readAsDataURL(file);
@@ -487,6 +527,7 @@ export default function AdminPage() {
   };
 
   const handleLogout = async () => {
+    setPendingImages({});
     await fetch('/api/admin/logout', { method: 'POST' });
     window.location.href = '/';
   };
@@ -811,10 +852,9 @@ export default function AdminPage() {
                               </div>
                               <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mt-4">
                                 {color.images.map((img: string, idx: number) => {
-                                  const imgSrc = img.includes('-desktop.webp') || img.includes('-mobile.webp') ? img : img.replace('.webp', '-desktop.webp');
                                   return (
                                   <div key={idx} className="relative aspect-square rounded-lg border-2 border-gray-200 hover:border-black transition-all group" style={{ minHeight: '80px' }}>
-                                    <Image src={imgSrc} alt={`${color.name} ${idx + 1}`} fill className="object-cover rounded-lg" loading="lazy" sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw" />
+                                    <Image src={img} alt={`${color.name} ${idx + 1}`} fill className="object-cover rounded-lg" loading="lazy" sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw" unoptimized />
                                     <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-black/60 backdrop-blur-sm rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                       <label className="flex-1 h-10 bg-[#ffd624] rounded-lg flex items-center justify-center cursor-pointer hover:bg-[#ffed4e] transition-all shadow-lg">
                                         <Upload className="w-5 h-5 text-black" />

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/auth';
+import { verifyAdminToken, createAdminToken } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -20,9 +20,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false }, { status: 401 });
     }
 
-    const isValid = verifyAdminToken(token);
+    const isValid = await verifyAdminToken(token);
 
-    return NextResponse.json({ valid: isValid });
+    if (isValid) {
+      // Renovar token por otros 15 minutos
+      const newToken = await createAdminToken();
+      const response = NextResponse.json({ valid: true });
+      response.cookies.set('admin_token', newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 15, // 15 minutos
+        path: '/'
+      });
+      return response;
+    }
+
+    return NextResponse.json({ valid: false }, { status: 401 });
   } catch {
     return NextResponse.json({ valid: false }, { status: 400 });
   }

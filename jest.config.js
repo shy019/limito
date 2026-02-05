@@ -11,6 +11,9 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(jose)/)',
+  ],
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
     'components/**/*.{js,jsx,ts,tsx}',

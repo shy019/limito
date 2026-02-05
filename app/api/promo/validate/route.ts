@@ -45,15 +45,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ access: false });
     }
 
-    // Token expires in 5 minutes
-    const token = createAccessToken();
+    // Token expires in 60 minutes
+    const token = await createAccessToken();
     
     const response = NextResponse.json({ access: true, token });
     response.cookies.set('limito_access', token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 5 * 60, // 5 minutes
+      maxAge: 60 * 60, // 60 minutes
       path: '/'
     });
     

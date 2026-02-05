@@ -1,4 +1,4 @@
-import crypto from 'crypto-js';
+import { createHash } from 'crypto';
 
 const PAYU_MERCHANT_ID = process.env.PAYU_MERCHANT_ID || '';
 const PAYU_API_KEY = process.env.PAYU_API_KEY || '';
@@ -23,13 +23,13 @@ export interface PayUOrder {
 export function generateSignature(referenceCode: string, amount: number): string {
   const amountStr = amount.toFixed(1);
   const signatureString = `${PAYU_API_KEY}~${PAYU_MERCHANT_ID}~${referenceCode}~${amountStr}~COP`;
-  return crypto.MD5(signatureString).toString();
+  return createHash('md5').update(signatureString).digest('hex');
 }
 
 export function validateSignature(signature: string, referenceCode: string, amount: number, transactionState: string): boolean {
   const amountStr = amount.toFixed(1);
   const signatureString = `${PAYU_API_KEY}~${PAYU_MERCHANT_ID}~${referenceCode}~${amountStr}~COP~${transactionState}`;
-  const expectedSignature = crypto.MD5(signatureString).toString();
+  const expectedSignature = createHash('md5').update(signatureString).digest('hex');
   return signature === expectedSignature;
 }
 
