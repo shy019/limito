@@ -147,25 +147,16 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       type="button"
       style={{ backgroundColor: 'transparent', border: 'none' }}
     >
-      <div className="white-glow" style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: 'transparent',
-        transition: 'all 0.3s ease-in-out',
-        boxShadow: isHovered ? '1px 3px 124px 98px var(--accent-glow-strong)' : '1px 3px 5px -1px var(--accent-glow-strong)',
-        pointerEvents: 'none'
-      }}><span></span></div>
       <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)', transform: isHovered ? 'translateY(-8px)' : 'translateY(0)' }}>
         <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'transparent' }}>
           <ResponsiveProductImage
-            src={mainImage}
+            src={isHovered && hoverImage ? hoverImage : mainImage}
             alt={product.name}
             width={800}
             height={800}
             loading="eager"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500"
+            style={{ transform: isHovered ? 'scale(1.08)' : 'scale(1)' }}
           />
 
           {/* Overlay */}
