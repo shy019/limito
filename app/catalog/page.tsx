@@ -141,6 +141,8 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       className="group cursor-pointer w-full text-left product-card relative transform transition-all duration-300 active:scale-[0.98]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setIsHovered(false)}
       onClick={onClick}
       type="button"
       style={{ backgroundColor: 'transparent', border: 'none' }}
