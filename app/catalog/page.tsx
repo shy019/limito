@@ -154,7 +154,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
         transform: 'translate(-50%, -50%)',
         backgroundColor: 'transparent',
         transition: 'all 0.3s ease-in-out',
-        boxShadow: isHovered ? '1px 3px 124px 98px rgba(212, 175, 55, 0.75)' : '1px 3px 5px -1px rgba(212, 175, 55, 0.75)',
+        boxShadow: isHovered ? '1px 3px 124px 98px rgba(var(--accent-color-rgb, 212, 175, 55), 0.75)' : '1px 3px 5px -1px rgba(var(--accent-color-rgb, 212, 175, 55), 0.75)',
         pointerEvents: 'none'
       }}><span></span></div>
       <div className="overflow-hidden shadow-md transition-all duration-300" style={{ borderRadius: '16px', backgroundColor: 'transparent', boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 20px rgba(0,0,0,0.2)', transform: isHovered ? 'translateY(-8px)' : 'translateY(0)' }}>
@@ -419,7 +419,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: selectedColor === idx ? '0 0 20px rgba(255, 214, 36, 0.5)' : 'none'
+                    boxShadow: selectedColor === idx ? '0 0 20px rgba(var(--accent-color-rgb, 255, 214, 36), 0.5)' : 'none'
                   }}
                 >
                   {selectedColor === idx && <Check className="w-4 h-4 transition-transform duration-200 scale-110" style={{ color: color.hex === '#FFFFFF' ? '#000' : '#fff' }} />}
@@ -532,7 +532,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                 cursor: 'pointer',
                 marginBottom: '0.75rem',
                 textTransform: 'uppercase',
-                boxShadow: '0 4px 12px rgba(255, 214, 36, 0.2)'
+                boxShadow: '0 4px 12px rgba(var(--accent-color-rgb, 255, 214, 36), 0.2)'
               }}
             >
               {t('goToCart')}

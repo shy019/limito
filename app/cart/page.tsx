@@ -392,7 +392,7 @@ export default function CarritoPage() {
                       <button
                         onClick={handleApplyPromo}
                         className="px-6 py-3 uppercase transition-all relative overflow-hidden group"
-                        style={{ backgroundColor: '#000000', color: '#ffffff', fontSize: '1rem', border: '2px solid var(--accent-color, #ffd624)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(255, 214, 36, 0.2)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}
+                        style={{ backgroundColor: '#000000', color: '#ffffff', fontSize: '1rem', border: '2px solid var(--accent-color, #ffd624)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(var(--accent-color-rgb, 255, 214, 36), 0.2)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}
                       >
                         <span className="relative z-10">{t('apply')}</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -461,7 +461,7 @@ export default function CarritoPage() {
       {/* Modal de confirmación */}
       {mounted && showClearModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.8)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ backgroundColor: '#000000', borderRadius: '16px', padding: '2rem', maxWidth: '28rem', margin: '0 1rem', border: '2px solid var(--accent-color, #ffd624)', boxShadow: '0 20px 60px rgba(255, 214, 36, 0.3)', textAlign: 'center' }}>
+          <div style={{ backgroundColor: '#000000', borderRadius: '16px', padding: '2rem', maxWidth: '28rem', margin: '0 1rem', border: '2px solid var(--accent-color, #ffd624)', boxShadow: '0 20px 60px rgba(var(--accent-color-rgb, 255, 214, 36), 0.3)', textAlign: 'center' }}>
             <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '1rem', color: '#ffffff' }}>{t('clearConfirm')}</h3>
             <p style={{ fontSize: '0.875rem', marginBottom: '1.5rem', color: 'rgba(255, 255, 255, 0.7)' }}>{t('clearMessage')}</p>
             <div style={{ display: 'flex', gap: '0.75rem' }}>

@@ -67,7 +67,7 @@ export default function PoliticasPage() {
               const newLocale = locale === 'es' ? 'en' : 'es';
               document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
               window.location.reload();
-            }} className="text-2xl rounded-full w-12 h-12 shadow-lg flex items-center justify-center hover:scale-110 transition-transform" style={{ backgroundColor: 'rgba(255, 214, 36, 0.1)' }}>
+            }} className="text-2xl rounded-full w-12 h-12 shadow-lg flex items-center justify-center hover:scale-110 transition-transform" style={{ backgroundColor: 'rgba(var(--accent-color-rgb, 255, 214, 36), 0.1)' }}>
               {locale === 'es' ? '🇪🇸' : '🇺🇸'}
             </button>
           )}

@@ -49,6 +49,13 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   // Aplicar color de acento como CSS variable
   useEffect(() => {
     document.documentElement.style.setProperty('--accent-color', accentColor);
+    
+    // Convertir hex a RGB para usar en rgba()
+    const hex = accentColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    document.documentElement.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
   }, [accentColor]);
 
   return (

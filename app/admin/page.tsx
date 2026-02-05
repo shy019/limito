@@ -732,7 +732,7 @@ export default function AdminPage() {
                                 setEditForm({ ...editForm, colors: [...editForm.colors, newColor] });
                               }
                             }}
-                            className="px-6 py-3 bg-[var(--accent-color, #ffd624)] text-black text-sm font-black rounded-lg hover:bg-[#ffed4e] transition-all"
+                            className="px-6 py-3 bg-[var(--accent-color, #ffd624)] text-black text-sm font-black rounded-lg hover:brightness-110 transition-all"
                           >
                             + Añadir Color
                           </button>
@@ -856,7 +856,7 @@ export default function AdminPage() {
                                   <div key={idx} className="relative aspect-square rounded-lg border-2 border-gray-200 hover:border-black transition-all group" style={{ minHeight: '80px' }}>
                                     <Image src={img} alt={`${color.name} ${idx + 1}`} fill className="object-cover rounded-lg" loading="lazy" sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw" unoptimized />
                                     <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-black/60 backdrop-blur-sm rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                      <label className="flex-1 h-10 bg-[var(--accent-color, #ffd624)] rounded-lg flex items-center justify-center cursor-pointer hover:bg-[#ffed4e] transition-all shadow-lg">
+                                      <label className="flex-1 h-10 bg-[var(--accent-color, #ffd624)] rounded-lg flex items-center justify-center cursor-pointer hover:brightness-110 transition-all shadow-lg">
                                         <Upload className="w-5 h-5 text-black" />
                                         <input
                                           id={`replace-image-${colorIdx}-${idx}`}

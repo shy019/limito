@@ -130,7 +130,7 @@ export default function SoldOutPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[var(--accent-color, #ffd624)] text-black py-5 text-base font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 hover:bg-[#ffed4e] hover:shadow-2xl hover:scale-105 active:scale-95"
+                  className="w-full bg-[var(--accent-color, #ffd624)] text-black py-5 text-base font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 hover:brightness-110 hover:shadow-2xl hover:scale-105 active:scale-95"
                 >
                   {locale === 'es' ? 'OBTENER ACCESO' : 'GET ACCESS'}
                 </button>
