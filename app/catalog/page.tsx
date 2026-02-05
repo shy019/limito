@@ -331,7 +331,8 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
           .modal-title-wrapper { display: none !important; }
           .modal-images { padding: 0 !important; background-color: transparent !important; padding-top: 80px !important; }
           .modal-info { padding: 1.5rem !important; background-color: transparent !important; }
-          .modal-main-image { height: 550px !important; }
+          .modal-main-image { height: 400px !important; width: 80% !important; margin: 0 auto !important; }
+          .modal-main-image img { object-fit: cover !important; }
         }
       `
     }} />
