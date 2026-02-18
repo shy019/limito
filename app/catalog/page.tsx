@@ -238,6 +238,10 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     return () => window.removeEventListener('cart-updated', handleCartUpdate);
   }, [product.id, selectedColor, product.colors, refetchStock]);
 
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [selectedColor]);
+
   const currentColor = product.colors[selectedColor];
   const images = currentColor.images.filter(img => img && img.trim() !== '');
   const displayImages = images.length > 0 ? images : ['/images/loading.png'];
