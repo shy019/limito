@@ -41,6 +41,17 @@ export default function BackgroundOverlay() {
     };
   }, [backgroundImage, backgroundType, shouldShowVideo]);
 
+  useEffect(() => {
+    if (backgroundType !== 'video' || !shouldShowVideo) return;
+    
+    const video = document.querySelector('video');
+    if (video) {
+      video.play().catch(() => {
+        // Fallback si autoplay falla
+      });
+    }
+  }, [backgroundType, shouldShowVideo, backgroundImage]);
+
   // Loading screen solo para páginas con video
   if (!showContent && shouldShowVideo && backgroundType === 'video') {
     return (
@@ -71,6 +82,8 @@ export default function BackgroundOverlay() {
           muted
           playsInline
           preload="auto"
+          webkit-playsinline="true"
+          x-webkit-airplay="allow"
           style={{
             position: 'fixed',
             top: 0,
@@ -79,7 +92,8 @@ export default function BackgroundOverlay() {
             height: '100%',
             objectFit: 'cover',
             backgroundColor: '#000',
-            zIndex: 0
+            zIndex: 0,
+            pointerEvents: 'none'
           }}
         >
           <source src={backgroundImage} type="video/mp4" />
