@@ -1,7 +1,7 @@
 // Turso Products V2 - Base de datos SQLite con Turso
 import { createClient } from '@libsql/client';
 
-// Crear cliente lazy (solo cuando se necesita)
+
 let _tursoClient: ReturnType<typeof createClient> | null = null;
 
 function getTursoClient() {
@@ -55,7 +55,7 @@ async function cleanExpiredReservations(): Promise<void> {
       args: [Date.now()]
     });
   } catch (error) {
-    console.error('Error cleaning reservations:', error);
+    // silently ignore cleanup errors
   }
 }
 

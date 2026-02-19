@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/cloudinary';
 import { updateSettingInTurso } from '@/lib/turso-products-v2';
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, path: url });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error('Upload error', { error });
     return NextResponse.json({ success: false, error: 'Upload failed' }, { status: 500 });
   }
 }

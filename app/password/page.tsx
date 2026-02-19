@@ -60,7 +60,6 @@ export default function PasswordPage() {
       setLocale(localeCookie.split('=')[1]);
     }
 
-    // Check if user already has valid access token
     const accessCookie = cookies.find(c => c.startsWith('limito_access='));
     if (accessCookie) {
       window.location.replace('/catalog');
@@ -76,8 +75,7 @@ export default function PasswordPage() {
           setTimeout(() => setPageLoading(false), 100);
         }
       })
-      .catch((err) => {
-        console.error('Store config error:', err);
+      .catch(() => {
         setTimeout(() => setPageLoading(false), 100);
       });
 
@@ -143,7 +141,6 @@ export default function PasswordPage() {
     }
 
     try {
-      // Encrypt phone before sending
       const res = await fetch('/api/phones/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

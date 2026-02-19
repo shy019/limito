@@ -196,7 +196,7 @@ export default function CarritoPage() {
           <div className="text-center space-y-8">
             <ShoppingBag className="w-24 h-24 mx-auto" style={{ color: 'var(--accent-color, #ffd624)' }} />
             <h1 className="text-6xl font-black" style={{ color: '#ffffff' }}>{t('empty')}</h1>
-            <Link href="/" className="inline-block px-8 uppercase tracking-wider transition-all relative overflow-hidden group" style={{ backgroundColor: '#5433EB', color: '#FFFFFF', fontSize: '1rem', height: '56px', lineHeight: '56px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(84, 51, 235, 0.3)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}>
+            <Link href="/" className="inline-block px-8 uppercase tracking-wider transition-all relative overflow-hidden group" style={{ backgroundColor: 'var(--accent-color, #D4AF37)', color: '#000000', fontSize: '1rem', height: '56px', lineHeight: '56px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(212, 175, 55, 0.3)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}>
               <span className="relative z-10">{t('continueShopping')}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </Link>
@@ -228,10 +228,10 @@ export default function CarritoPage() {
               padding-bottom: 3rem;
             }
             .cart-item {
-              padding: 2rem;
+              padding: 0;
             }
             .cart-item-content {
-              gap: 2rem;
+              gap: 0;
             }
             .back-button {
               top: 75px;
@@ -244,11 +244,15 @@ export default function CarritoPage() {
                 margin-top: 20px !important;
               }
               .cart-item {
-                padding: 1rem !important;
+                padding: 0 !important;
               }
               .cart-item-content {
-                flex-direction: column !important;
-                gap: 1rem !important;
+                flex-direction: row !important;
+                gap: 0 !important;
+              }
+              .cart-item-image {
+                width: 100px !important;
+                min-height: 100px !important;
               }
               .back-button {
                 top: 75px !important;
@@ -275,45 +279,50 @@ export default function CarritoPage() {
           <div className="grid md:grid-cols-3 gap-12">
             <div className="md:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {items.map((item) => (
-                <div key={item.productId} className="rounded-2xl transition-all cart-item" style={{ backgroundColor: 'rgba(20, 20, 20, 0.9)' }}>
-                  <div className="flex gap-6 cart-item-content">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-2xl font-black" style={{ color: '#ffffff' }}>{item.name}</h3>
-                        <button onClick={() => cart.remove(item.productId)} className="hover:scale-110 transition-all" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-                          <Trash2 className="w-4 h-4" style={{ color: '#ff0000' }} />
-                        </button>
-                      </div>
-                      <p className="text-3xl font-black" style={{ color: 'var(--accent-color, #ffd624)', marginTop: '-4px' }}>{formatPrice(item.price)}</p>
+                <div key={item.productId} className="rounded-2xl transition-all cart-item" style={{ backgroundColor: 'rgba(20, 20, 20, 0.9)', overflow: 'hidden' }}>
+                  <div className="flex cart-item-content" style={{ gap: 0 }}>
+                    <div className="cart-item-image" style={{ width: '120px', minHeight: '120px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                      <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
                     </div>
-
-                    <div className="flex flex-col items-end justify-end">
-                      <div className="flex items-center" style={{ gap: '0.5rem' }}>
-                        <button onClick={async () => {
-                          if (item.quantity === 1) {
-                            await cart.remove(item.productId);
-                          } else {
-                            await cart.updateQuantity(item.productId, item.quantity - 1);
-                          }
-                        }} className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-105" style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
-                          <Minus className="w-3.5 h-3.5" style={{ color: '#ffffff' }} />
-                        </button>
-                        <span className="w-8 text-center font-black text-xl" style={{ color: 'var(--accent-color, #ffd624)' }}>{item.quantity}</span>
-                        <button
-                          onClick={async () => {
-                            const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-                            if (totalItems >= 5) {
-                              setToast({ message: t('maxTotal'), type: 'error' });
-                              return;
+                    <div style={{ flex: 1, padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="flex items-start justify-between" style={{ gap: '0.5rem' }}>
+                          <h3 className="font-black" style={{ color: '#ffffff', fontSize: '1rem', lineHeight: 1.2 }}>{item.name}</h3>
+                          <button onClick={() => cart.remove(item.productId)} className="hover:scale-110 transition-all" style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', flexShrink: 0 }}>
+                            <Trash2 className="w-4 h-4" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                          </button>
+                        </div>
+                        <p className="font-black" style={{ color: 'var(--accent-color, #ffd624)', fontSize: '1.25rem', marginTop: '4px' }}>{formatPrice(item.price)}</p>
+                      </div>
+                      <div className="flex items-center justify-between" style={{ marginTop: '12px' }}>
+                        <div className="flex items-center" style={{ gap: '0.5rem' }}>
+                          <button onClick={async () => {
+                            if (item.quantity === 1) {
+                              await cart.remove(item.productId);
+                            } else {
+                              await cart.updateQuantity(item.productId, item.quantity - 1);
                             }
-                            await cart.updateQuantity(item.productId, item.quantity + 1);
-                          }}
-                          disabled={item.quantity >= 5 || items.reduce((sum, i) => sum + i.quantity, 0) >= 5}
-                          className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed"
-                          style={{ backgroundColor: 'var(--accent-color, #ffd624)', color: '#000000' }}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                          }} className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-105" style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+                            <Minus className="w-3 h-3" style={{ color: '#ffffff' }} />
+                          </button>
+                          <span className="w-6 text-center font-black" style={{ color: 'var(--accent-color, #ffd624)', fontSize: '1rem' }}>{item.quantity}</span>
+                          <button
+                            onClick={async () => {
+                              const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+                              if (totalItems >= 5) {
+                                setToast({ message: t('maxTotal'), type: 'error' });
+                                return;
+                              }
+                              await cart.updateQuantity(item.productId, item.quantity + 1);
+                            }}
+                            disabled={item.quantity >= 5 || items.reduce((sum, i) => sum + i.quantity, 0) >= 5}
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: 'var(--accent-color, #ffd624)', color: '#000000' }}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <p className="font-black" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{formatPrice(item.price * item.quantity)}</p>
                       </div>
                     </div>
                   </div>

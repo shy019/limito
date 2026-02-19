@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage, deleteImage } from '@/lib/cloudinary';
 import { verifyAdminToken } from '@/lib/auth';
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    console.error('Image processing error:', error);
+    logger.error('Image processing error', { error });
     return NextResponse.json({ error: 'Failed to process image' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reserveStockInTurso } from '@/lib/turso-products-v2';
 import { rateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       available: result.data?.available || 0
     });
   } catch (error) {
-    console.error('Error en reserve:', error);
+    logger.error('Error en reserve', { error });
     return NextResponse.json({ success: false, error: 'Error interno' }, { status: 500 });
   }
 }

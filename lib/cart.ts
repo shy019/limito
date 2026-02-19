@@ -176,8 +176,6 @@ export const cart = {
       const items = cart.get().filter(i => i.productId !== productId);
       localStorage.setItem(CART_KEY, JSON.stringify(items));
       
-      // Limpiar cache
-      await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
       
       window.dispatchEvent(new Event('cart-updated'));
     } catch {}
@@ -209,8 +207,6 @@ export const cart = {
         item.reservedAt = Date.now();
         localStorage.setItem(CART_KEY, JSON.stringify(items));
         
-        // Limpiar cache
-        await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
         
         window.dispatchEvent(new Event('cart-updated'));
         return { success: true };
@@ -236,8 +232,6 @@ export const cart = {
 
       localStorage.removeItem(CART_KEY);
       
-      // Limpiar cache
-      await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
       
       window.dispatchEvent(new Event('cart-updated'));
     } catch {}

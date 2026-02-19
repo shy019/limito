@@ -25,7 +25,6 @@ interface StockOutNotification {
 
 export async function sendTelegramNotification(message: string): Promise<boolean> {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.warn('Telegram not configured');
     return false;
   }
 
@@ -42,7 +41,7 @@ export async function sendTelegramNotification(message: string): Promise<boolean
 
     return response.ok;
   } catch (error) {
-    console.error('Telegram notification error:', error);
+    // silently ignore telegram errors
     return false;
   }
 }

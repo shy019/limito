@@ -114,7 +114,7 @@ export default function CatalogoPage() {
           }} t={t} setToast={setToast} />
         )}
 
-        <footer style={{ backgroundColor: 'transparent', paddingTop: '20px', paddingBottom: '20px', flexShrink: 0, position: 'relative', zIndex: 100000 }}>
+        <footer className="page-footer" style={{ backgroundColor: 'transparent', paddingTop: '20px', paddingBottom: '20px', flexShrink: 0, position: 'relative', zIndex: 10 }}>
           <div className="max-w-6xl mx-auto text-center">
             <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('footer')}</p>
           </div>
@@ -306,26 +306,30 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
           .modal-main-image img { object-fit: cover !important; max-height: 400px !important; }
           .modal-images .aspect-square { max-height: 80px !important; max-width: 80px !important; }
           .modal-images div[style*="grid-template-columns"] { max-width: 350px !important; margin: 0 auto !important; }
+          .modal-footer { display: none !important; }
         }
         @media (max-width: 768px) {
           .modal-container { width: 100vw !important; height: calc(100vh - 160px) !important; background-color: transparent !important; overflow-y: scroll !important; -webkit-overflow-scrolling: touch !important; pointer-events: auto !important; margin-top: 80px !important; margin-bottom: 0px !important; }
-          .modal-content { display: block !important; height: auto !important; min-height: calc(100vh - 140px) !important; padding-top: 0 !important; }
+          .modal-content { display: block !important; height: auto !important; min-height: auto !important; padding-top: 0 !important; }
           .modal-title-wrapper { display: none !important; }
-          .modal-images { padding: 0 !important; background-color: transparent !important; padding-top: 80px !important; }
+          .modal-images { padding: 0 !important; background-color: transparent !important; }
           .modal-info { padding: 1.5rem !important; background-color: transparent !important; }
           .modal-main-image { height: 400px !important; width: 80% !important; margin: 0 auto !important; }
           .modal-main-image img { object-fit: cover !important; }
+          .page-footer { display: none !important; }
+          .modal-back-btn { position: fixed !important; top: 90px !important; left: 28px !important; z-index: 100001 !important; }
+          .modal-wrapper { height: auto !important; }
         }
       `
     }} />
-      <div className="modal-title-wrapper" style={{ width: '90%', margin: '0 auto', paddingTop: '120px', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: 0 }}>
+      <div className="modal-title-wrapper" style={{ width: '90%', margin: '0 auto', paddingTop: '60px', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: 0 }}>
         <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
           <h1 style={{ fontSize: '3.75rem', fontWeight: 900, marginBottom: '1rem', color: '#ffffff' }}>FORGING MY OWN DESTINY</h1>
         </div>
       </div>
-      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 150px)', pointerEvents: 'none' }}>
+      <div className="modal-wrapper flex items-center justify-center" style={{ height: 'calc(100vh - 150px)', pointerEvents: 'none' }}>
       <div className="modal-container bg-white" style={{ width: '85vw', height: '85vh', pointerEvents: 'auto', position: 'relative' }}>
-        <button onClick={onClose} className="hover:scale-110 transition-transform" style={{ position: 'absolute', padding: '0.5rem', left: '1rem', top: '1rem', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)', zIndex: 10, borderRadius: '50%', border: 'none', cursor: 'pointer' }}>
+        <button onClick={onClose} className="modal-back-btn hover:scale-110 transition-transform" style={{ position: 'fixed', padding: '0.5rem', left: '28px', top: '90px', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)', zIndex: 100001, borderRadius: '50%', border: 'none', cursor: 'pointer' }}>
           <ChevronLeft className="w-6 h-6" />
         </button>
         <div className="modal-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
@@ -362,11 +366,17 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                   <button
                     key={idx}
                     onClick={() => {
-                      setSelectedImage(idx);
                       const len = displayImages.length;
-                      if (len > 4) {
-                        const visibleEnd = (thumbStart + 3) % len;
-                        if (idx === visibleEnd) setThumbStart((thumbStart + 1) % len);
+                      if (len > 4 && idx === thumbStart && idx !== selectedImage) {
+                        const prev = (selectedImage - 1 + len) % len;
+                        setSelectedImage(prev);
+                        setThumbStart((thumbStart - 1 + len) % len);
+                      } else {
+                        setSelectedImage(idx);
+                        if (len > 4) {
+                          const visibleEnd = (thumbStart + 3) % len;
+                          if (idx === visibleEnd) setThumbStart((thumbStart + 1) % len);
+                        }
                       }
                     }}
                     className="aspect-square overflow-hidden"
@@ -534,6 +544,9 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
               </div>
         </div>
         </div>
+        <footer className="modal-footer" style={{ backgroundColor: 'transparent', padding: '20px', textAlign: 'center' }}>
+          <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('footer')}</p>
+        </footer>
       </div>
       </div>
     </div>,

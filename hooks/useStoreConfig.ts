@@ -5,6 +5,7 @@ import { apiCache } from '@/lib/api-cache';
 interface StoreConfig {
   mode: 'active' | 'password' | 'soldout';
   zones?: any[];
+  catalogSlogan?: string;
 }
 
 let globalConfig: StoreConfig | null = null;

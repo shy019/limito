@@ -6,11 +6,12 @@ export function useTokenRenewal() {
       try {
         await fetch('/api/access/renew', { method: 'POST' });
       } catch (err) {
-        console.error('Token renewal error:', err);
+        // ignore renewal errors
       }
     };
 
-    // Renovar cada 5 minutos
+    // Renovar inmediatamente y luego cada 5 minutos
+    renewToken();
     const interval = setInterval(renewToken, 5 * 60 * 1000);
 
     return () => clearInterval(interval);

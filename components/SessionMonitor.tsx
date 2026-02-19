@@ -11,6 +11,17 @@ export default function SessionMonitor() {
   const [showWarning, setShowWarning] = useState(false);
   const router = useRouter();
 
+  // Refresh session timestamp on any user interaction
+  useEffect(() => {
+    const refresh = () => {
+      sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now().toString());
+    };
+
+    const events = ['click', 'scroll', 'keydown', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, refresh, { passive: true }));
+    return () => events.forEach(e => window.removeEventListener(e, refresh));
+  }, []);
+
   useEffect(() => {
     const checkSession = () => {
       const timestamp = sessionStorage.getItem(SESSION_TIMESTAMP_KEY);

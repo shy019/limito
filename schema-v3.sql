@@ -39,6 +39,7 @@ INSERT OR IGNORE INTO settings (key, value, description) VALUES
   ('background_type', 'image', 'Tipo de fondo: image o video'),
   ('static_background_image', '', 'Imagen estática para catalog/cart'),
   ('accent_color', '#D4AF37', 'Color de acento de la tienda'),
+  ('catalog_slogan', 'FORGING MY OWN DESTINY', 'Slogan mostrado en el modal de producto'),
   ('password_until', '', 'Fecha límite del modo password');
 
 -- ============================================================================

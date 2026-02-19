@@ -4,6 +4,39 @@ import { jwtVerify } from 'jose';
 
 const knownRoutes = ['/', '/password', '/catalog', '/catalogo', '/product', '/producto', '/checkout', '/cart', '/carrito', '/soldout', '/admin', '/policies', '/contact'];
 
+let cachedMode: { value: string; expiry: number } | null = null;
+
+export function _resetCacheForTesting() { cachedMode = null; }
+
+async function getStoreMode(): Promise<string> {
+  if (cachedMode && Date.now() < cachedMode.expiry) return cachedMode.value;
+
+  try {
+    const url = process.env.TURSO_DATABASE_URL!;
+    const token = process.env.TURSO_AUTH_TOKEN!;
+    // Convert libsql:// to https:// for HTTP API
+    const httpUrl = url.replace('libsql://', 'https://');
+
+    const res = await fetch(`${httpUrl}/v2/pipeline`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ type: 'execute', stmt: { sql: "SELECT value FROM settings WHERE key = 'store_mode' LIMIT 1" } }, { type: 'close' }] }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const rows = data?.results?.[0]?.response?.result?.rows;
+      if (rows?.[0]?.[0]?.value) {
+        const mode = rows[0][0].value;
+        cachedMode = { value: mode, expiry: Date.now() + 20_000 }; // cache 20s
+        return mode;
+      }
+    }
+  } catch {}
+
+  return process.env.STORE_MODE || 'password';
+}
+
 async function isValidToken(token: string): Promise<boolean> {
   try {
     const secret = process.env.JWT_SECRET;
@@ -34,12 +67,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
   
-  const storeMode = request.cookies.get('store_mode')?.value || process.env.STORE_MODE || 'password';
+  const storeMode = await getStoreMode();
   const accessToken = request.cookies.get('limito_access')?.value;
   
   // SOLDOUT: everything redirects to /soldout
   if (storeMode === 'soldout') {
-    if (pathname !== '/soldout') {
+    if (pathname !== '/soldout' && pathname !== '/policies' && pathname !== '/contact') {
       return NextResponse.redirect(new URL('/soldout', request.url));
     }
     return NextResponse.next();
