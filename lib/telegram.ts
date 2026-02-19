@@ -8,7 +8,6 @@ interface OrderNotification {
   customerPhone: string;
   items: Array<{
     name: string;
-    color: string;
     quantity: number;
     price: number;
   }>;
@@ -22,7 +21,6 @@ interface OrderNotification {
 
 interface StockOutNotification {
   productName: string;
-  color: string;
 }
 
 export async function sendTelegramNotification(message: string): Promise<boolean> {
@@ -51,7 +49,7 @@ export async function sendTelegramNotification(message: string): Promise<boolean
 
 export async function notifyNewOrder(order: OrderNotification): Promise<boolean> {
   const itemsList = order.items
-    .map(item => `  • ${item.name} - ${item.color} x${item.quantity} - $${item.price.toLocaleString('es-CO')}`)
+    .map(item => `  • ${item.name} x${item.quantity} - $${item.price.toLocaleString('es-CO')}`)
     .join('\n');
 
   const message = `
@@ -80,7 +78,6 @@ export async function notifyStockOut(notification: StockOutNotification): Promis
 ⚠️ <b>PRODUCTO AGOTADO</b>
 
 📦 <b>Producto:</b> ${notification.productName}
-🎨 <b>Color:</b> ${notification.color}
 
 ⏰ ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}
   `.trim();
@@ -88,12 +85,11 @@ export async function notifyStockOut(notification: StockOutNotification): Promis
   return sendTelegramNotification(message);
 }
 
-export async function notifyLowStock(productName: string, color: string, stock: number): Promise<boolean> {
+export async function notifyLowStock(productName: string, stock: number): Promise<boolean> {
   const message = `
 ⚠️ <b>STOCK BAJO</b>
 
 📦 <b>Producto:</b> ${productName}
-🎨 <b>Color:</b> ${color}
 📊 <b>Stock:</b> ${stock} unidades
 
 ⏰ ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}

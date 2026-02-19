@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getSettingsFromTurso, updateSettingInTurso } from '@/lib/turso-products-v2';
+import { verifyAdminToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
 export async function GET() {
@@ -35,8 +37,13 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token || !(await verifyAdminToken(token))) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { mode, passwordUntil, backgroundImage, backgroundType, staticBackgroundImage, accentColor } = await request.json();
     
     await updateSettingInTurso('store_mode', mode, 'admin');

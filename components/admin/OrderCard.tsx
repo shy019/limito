@@ -50,7 +50,7 @@ export default function OrderCard({ order, onUpdate }: OrderCardProps) {
         <p className="text-xs font-bold mb-2" style={{ color: '#6B6B6B' }}>Productos</p>
         {order.items.map((item, idx) => (
           <p key={idx} className="text-sm" style={{ color: '#0A0A0A' }}>
-            {item.name} - {item.color} x{item.quantity}
+            {item.name} x{item.quantity}
           </p>
         ))}
       </div>

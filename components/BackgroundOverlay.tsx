@@ -36,8 +36,12 @@ export default function BackgroundOverlay() {
     video.addEventListener('canplaythrough', handleCanPlayThrough);
     video.load();
 
+    // Fallback: mostrar contenido después de 3s si el video no carga
+    const timeout = setTimeout(() => setShowContent(true), 3000);
+
     return () => {
       video.removeEventListener('canplaythrough', handleCanPlayThrough);
+      clearTimeout(timeout);
     };
   }, [backgroundImage, backgroundType, shouldShowVideo]);
 
@@ -54,22 +58,7 @@ export default function BackgroundOverlay() {
 
   // Loading screen solo para páginas con video
   if (!showContent && shouldShowVideo && backgroundType === 'video') {
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#000',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999
-      }}>
-        <div style={{ color: '#fff', fontSize: '1.5rem' }}>Cargando...</div>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -1,91 +1,53 @@
-// Debounced available stock fetcher
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-interface StockCache {
-  [key: string]: {
-    stock: number;
-    timestamp: number;
-  };
+interface StockCacheEntry {
+  stock: number;
+  timestamp: number;
 }
 
-const stockCache: StockCache = {};
-const CACHE_TTL = 30000; // 30 segundos
-const pendingFetches = new Map<string, Promise<void | undefined>>(); // Deduplicación
+const stockCache: Record<string, StockCacheEntry> = {};
+const CACHE_TTL = 30000;
+const pendingFetches = new Map<string, Promise<void | undefined>>();
 
-export function useAvailableStock(productId: string | null) {
-  const [stockMap, setStockMap] = useState<Record<string, number>>({});
+export function useAvailableStock(productId: string | null, initialStock?: number) {
+  const [stock, setStock] = useState<number>(initialStock ?? 0);
   const [loading, setLoading] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const fetchStock = useCallback(async (id: string) => {
     const cacheKey = `stock:${id}`;
     
-    // Si ya hay un fetch pendiente, retornar ese
     if (pendingFetches.has(cacheKey)) {
       return pendingFetches.get(cacheKey);
     }
     
     const cached = stockCache[cacheKey];
-    
-    // Return cached if fresh
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      setStockMap(prev => ({ ...prev, [id]: cached.stock }));
+      setStock(cached.stock);
       return;
     }
 
     setLoading(true);
     
-    const fetchPromise = fetch(`/api/products/available-stock?productId=${id}&t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' }
-    })
+    const fetchPromise = fetch(`/api/products/available-stock?productId=${id}`)
       .then(res => res.json())
       .then(data => {
-        const map: Record<string, number> = {};
-        data.availableStock.forEach((item: { name: string; availableStock: number }) => {
-          map[item.name] = item.availableStock;
-          stockCache[`${cacheKey}:${item.name}`] = {
-            stock: item.availableStock,
-            timestamp: Date.now()
-          };
-        });
-        
-        setStockMap(map);
+        const availableStock = data.availableStock ?? 0;
+        stockCache[cacheKey] = { stock: availableStock, timestamp: Date.now() };
+        setStock(availableStock);
         pendingFetches.delete(cacheKey);
       })
-      .catch(error => {
-        console.error('Error fetching stock:', error);
+      .catch(() => {
         pendingFetches.delete(cacheKey);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
     
     pendingFetches.set(cacheKey, fetchPromise);
     return fetchPromise;
   }, []);
 
-  const debouncedFetch = useCallback((id: string) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      fetchStock(id);
-    }, 500); // 500ms debounce
-  }, [fetchStock]);
-
   useEffect(() => {
-    if (productId) {
-      debouncedFetch(productId);
-    }
-    
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [productId, debouncedFetch]);
+    if (productId) fetchStock(productId);
+  }, [productId, fetchStock]);
 
-  return { stockMap, loading, refetch: fetchStock };
+  return { stock, loading, refetch: fetchStock };
 }

@@ -1,6 +1,5 @@
 import { cart } from '../cart';
 
-// Mock fetch globally
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
@@ -20,8 +19,6 @@ describe('Cart Functions', () => {
     const result = await cart.add({
       productId: 'test-1',
       name: 'Test Product',
-      color: 'Negro',
-      colorHex: '#000000',
       price: 50000,
       quantity: 1,
       image: '/test.jpg',
@@ -37,8 +34,6 @@ describe('Cart Functions', () => {
       await cart.add({
         productId: `test-${i}`,
         name: 'Test Product',
-        color: 'Negro',
-        colorHex: '#000000',
         price: 50000,
         quantity: 1,
         image: '/test.jpg',
@@ -48,8 +43,6 @@ describe('Cart Functions', () => {
     const result = await cart.add({
       productId: 'test-6',
       name: 'Test Product',
-      color: 'Negro',
-      colorHex: '#000000',
       price: 50000,
       quantity: 1,
       image: '/test.jpg',
@@ -64,14 +57,12 @@ describe('Cart Functions', () => {
     await cart.add({
       productId: 'test-1',
       name: 'Test Product',
-      color: 'Negro',
-      colorHex: '#000000',
       price: 50000,
       quantity: 1,
       image: '/test.jpg',
     });
 
-    await cart.remove('test-1', 'Negro');
+    await cart.remove('test-1');
     expect(cart.getCount()).toBe(0);
   });
 
@@ -79,14 +70,12 @@ describe('Cart Functions', () => {
     await cart.add({
       productId: 'test-1',
       name: 'Test Product',
-      color: 'Negro',
-      colorHex: '#000000',
       price: 50000,
       quantity: 1,
       image: '/test.jpg',
     });
 
-    await cart.updateQuantity('test-1', 'Negro', 3);
+    await cart.updateQuantity('test-1', 3);
     expect(cart.getCount()).toBe(3);
     expect(cart.getTotal()).toBe(150000);
   });
@@ -95,8 +84,6 @@ describe('Cart Functions', () => {
     await cart.add({
       productId: 'test-1',
       name: 'Test Product',
-      color: 'Negro',
-      colorHex: '#000000',
       price: 50000,
       quantity: 1,
       image: '/test.jpg',
@@ -111,8 +98,6 @@ describe('Cart Functions', () => {
     await cart.add({
       productId: 'test-1',
       name: 'Product 1',
-      color: 'Negro',
-      colorHex: '#000000',
       price: 50000,
       quantity: 2,
       image: '/test.jpg',
@@ -121,8 +106,6 @@ describe('Cart Functions', () => {
     await cart.add({
       productId: 'test-2',
       name: 'Product 2',
-      color: 'Blanco',
-      colorHex: '#FFFFFF',
       price: 45000,
       quantity: 1,
       image: '/test.jpg',
@@ -132,16 +115,14 @@ describe('Cart Functions', () => {
   });
 
   test('cart.sync removes items not in server reservations', async () => {
-    // Add item to local cart
     localStorage.setItem('limito_cart', JSON.stringify([
-      { productId: 'p1', color: 'Negro', quantity: 1, price: 50000 },
-      { productId: 'p2', color: 'Blanco', quantity: 1, price: 45000 }
+      { productId: 'p1', quantity: 1, price: 50000 },
+      { productId: 'p2', quantity: 1, price: 45000 }
     ]));
 
-    // Mock server returns only p1 as valid
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ validItems: [{ productId: 'p1', color: 'Negro' }] })
+      json: () => Promise.resolve({ validItems: [{ productId: 'p1' }] })
     });
 
     const synced = await cart.sync();
@@ -151,7 +132,7 @@ describe('Cart Functions', () => {
 
   test('cart.sync returns all items if server fails', async () => {
     localStorage.setItem('limito_cart', JSON.stringify([
-      { productId: 'p1', color: 'Negro', quantity: 1, price: 50000 }
+      { productId: 'p1', quantity: 1, price: 50000 }
     ]));
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false });

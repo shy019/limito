@@ -9,9 +9,10 @@ interface AnimatedButtonProps {
   fullWidth?: boolean;
   type?: 'button' | 'submit';
   loading?: boolean;
+  'data-testid'?: string;
 }
 
-export default function AnimatedButton({ text, onClick, disabled = false, fullWidth = false, type = 'button', loading = false }: AnimatedButtonProps) {
+export default function AnimatedButton({ text, onClick, disabled = false, fullWidth = false, type = 'button', loading = false, 'data-testid': testId }: AnimatedButtonProps) {
   const [animationPhase, setAnimationPhase] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,6 +65,7 @@ export default function AnimatedButton({ text, onClick, disabled = false, fullWi
         type={type}
         onClick={handleClick}
         disabled={disabled || loading}
+        data-testid={testId}
         style={{
           position: 'absolute',
           top: 0,

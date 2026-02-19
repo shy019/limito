@@ -1,12 +1,10 @@
 import { Product } from './products';
 
-export function generateProductSchema(product: Product, color: string, imageUrl: string) {
-  const selectedColor = product.colors.find(c => c.name === color) || product.colors[0];
-  
+export function generateProductSchema(product: Product, _color: string, imageUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: `${product.name} - ${color}`,
+    name: product.name,
     description: product.description,
     image: imageUrl,
     brand: {
@@ -15,7 +13,7 @@ export function generateProductSchema(product: Product, color: string, imageUrl:
     },
     offers: {
       '@type': 'Offer',
-      price: selectedColor.price,
+      price: product.price,
       priceCurrency: 'COP',
       availability: product.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url: `${process.env.NEXT_PUBLIC_BASE_URL}/catalogo`,
@@ -48,8 +46,8 @@ export function generateOrganizationSchema() {
       availableLanguage: ['Spanish']
     },
     sameAs: [
-      'https://instagram.com/limito.co',
-      'https://facebook.com/limito.co'
+      'https://instagram.com/limitohats',
+      'https://tiktok.com/@limitohats'
     ]
   };
 }

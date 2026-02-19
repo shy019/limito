@@ -14,14 +14,6 @@ function getTursoClient() {
   return _tursoClient;
 }
 
-interface ProductColor {
-  name: string;
-  hex: string;
-  images: string[];
-  stock: number;
-  price: number;
-}
-
 interface Product {
   id: string;
   name: string;
@@ -30,8 +22,11 @@ interface Product {
   description: string;
   descriptionEn: string;
   available: boolean;
-  colors: ProductColor[];
+  price: number;
+  stock: number;
+  images: string[];
   features: string[];
+  featuresEn: string[];
 }
 
 interface SyncResult<T> {
@@ -70,47 +65,29 @@ async function cleanExpiredReservations(): Promise<void> {
 export async function getProductsFromTurso(): Promise<SyncResult<Product[]>> {
   try {
     const result = await getTursoClient().execute(`
-      SELECT 
-        p.id, p.name, p.edition, p.type, p.description, p.description_en, p.available, p.features,
-        pc.name as color_name, pc.hex, pc.price, pc.stock, pc.images
-      FROM products p
-      LEFT JOIN product_colors pc ON p.id = pc.product_id
-      WHERE p.available = 1
-      ORDER BY p.id, pc.name
+      SELECT id, name, edition, type, description, description_en, available, features, features_en,
+             price, stock, images
+      FROM products
+      WHERE available = 1
+      ORDER BY id
     `);
 
-    const productsMap = new Map<string, Product>();
+    const products: Product[] = result.rows.map(row => ({
+      id: row.id as string,
+      name: row.name as string,
+      edition: row.edition as string || '001',
+      type: row.type as string || 'snapback',
+      description: row.description as string || '',
+      descriptionEn: row.description_en as string || '',
+      available: Boolean(row.available),
+      price: Number(row.price) || 0,
+      stock: Number(row.stock) || 0,
+      images: row.images ? JSON.parse(row.images as string) : [],
+      features: row.features ? String(row.features).split(',').map(f => f.trim()) : [],
+      featuresEn: row.features_en ? String(row.features_en).split(',').map(f => f.trim()) : []
+    }));
 
-    for (const row of result.rows) {
-      const productId = row.id as string;
-      
-      if (!productsMap.has(productId)) {
-        productsMap.set(productId, {
-          id: productId,
-          name: row.name as string,
-          edition: row.edition as string || '001',
-          type: row.type as string || 'snapback',
-          description: row.description as string || '',
-          descriptionEn: row.description_en as string || '',
-          available: Boolean(row.available),
-          colors: [],
-          features: row.features ? String(row.features).split(',').map(f => f.trim()) : []
-        });
-      }
-
-      if (row.color_name) {
-        const product = productsMap.get(productId)!;
-        product.colors.push({
-          name: row.color_name as string,
-          hex: row.hex as string,
-          price: Number(row.price),
-          stock: Number(row.stock) || 0,
-          images: row.images ? JSON.parse(row.images as string) : []
-        });
-      }
-    }
-
-    return { success: true, data: Array.from(productsMap.values()) };
+    return { success: true, data: products };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
@@ -121,31 +98,27 @@ export async function getProductsFromTurso(): Promise<SyncResult<Product[]>> {
 // ============================================================================
 export async function getAvailableStockFromTurso(
   productId: string,
-  color: string,
   excludeSessionId?: string
 ): Promise<number> {
   try {
-    // Limpiar reservas expiradas primero
     await cleanExpiredReservations();
 
-    // Obtener stock total
     const stockResult = await getTursoClient().execute({
-      sql: 'SELECT stock FROM product_colors WHERE product_id = ? AND name = ?',
-      args: [productId, color]
+      sql: 'SELECT stock FROM products WHERE id = ?',
+      args: [productId]
     });
 
     if (stockResult.rows.length === 0) return 0;
     const totalStock = Number(stockResult.rows[0].stock);
 
-    // Obtener reservas activas
     const reservedResult = await getTursoClient().execute({
       sql: `SELECT COALESCE(SUM(quantity), 0) as reserved 
             FROM reservations 
-            WHERE product_id = ? AND color = ? AND expires_at > ? 
+            WHERE product_id = ? AND expires_at > ? 
             ${excludeSessionId ? 'AND session_id != ?' : ''}`,
       args: excludeSessionId 
-        ? [productId, color, Date.now(), excludeSessionId]
-        : [productId, color, Date.now()]
+        ? [productId, Date.now(), excludeSessionId]
+        : [productId, Date.now()]
     });
 
     const reserved = Number(reservedResult.rows[0].reserved) || 0;
@@ -156,59 +129,80 @@ export async function getAvailableStockFromTurso(
 }
 
 // ============================================================================
-// RESERVAR STOCK (con transacción y lock)
+// RESERVAR STOCK (atómico con transacción + retry)
 // ============================================================================
 export async function reserveStockInTurso(
   productId: string,
-  color: string,
   quantity: number,
   sessionId: string
 ): Promise<SyncResult<{ available: number }>> {
-  try {
-    // Limpiar reservas expiradas
-    await cleanExpiredReservations();
+  const MAX_RETRIES = 3;
 
-    // Verificar stock disponible REAL
-    const available = await getAvailableStockFromTurso(productId, color, sessionId);
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      await cleanExpiredReservations();
 
-    if (quantity > available) {
+      const client = getTursoClient();
+
+      const settingsResult = await client.execute({
+        sql: 'SELECT value FROM settings WHERE key = ?',
+        args: ['reservation_duration_minutes']
+      });
+      const durationMinutes = settingsResult.rows.length > 0 
+        ? Number(settingsResult.rows[0].value) 
+        : 10;
+      const expiresAt = Date.now() + (durationMinutes * 60 * 1000);
+      const now = Date.now();
+
+      const results = await client.batch([
+        { sql: 'SELECT stock FROM products WHERE id = ?', args: [productId] },
+        { 
+          sql: `SELECT COALESCE(SUM(quantity), 0) as reserved 
+                FROM reservations 
+                WHERE product_id = ? AND expires_at > ? AND session_id != ?`,
+          args: [productId, now, sessionId]
+        },
+        {
+          sql: `INSERT INTO reservations (product_id, quantity, session_id, expires_at) 
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(product_id, session_id) DO UPDATE SET 
+                  quantity = excluded.quantity,
+                  expires_at = excluded.expires_at`,
+          args: [productId, quantity, sessionId, expiresAt]
+        }
+      ], 'deferred');
+
+      const totalStock = Number(results[0].rows[0]?.stock) || 0;
+      const othersReserved = Number(results[1].rows[0]?.reserved) || 0;
+      const available = Math.max(0, totalStock - othersReserved);
+
+      if (quantity > available) {
+        await client.execute({
+          sql: 'DELETE FROM reservations WHERE product_id = ? AND session_id = ?',
+          args: [productId, sessionId]
+        });
+        return { 
+          success: false, 
+          error: `Solo ${available} disponibles`,
+          data: { available }
+        };
+      }
+
+      return { success: true, data: { available: available - quantity } };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('SQLITE_BUSY') && attempt < MAX_RETRIES - 1) {
+        await new Promise(r => setTimeout(r, 150 + Math.random() * 200 * (attempt + 1)));
+        continue;
+      }
       return { 
         success: false, 
-        error: `Solo ${available} disponibles`,
-        data: { available }
+        error: error instanceof Error ? error.message : 'Error al reservar'
       };
     }
-
-    // Calcular expiración (leer de settings)
-    const settingsResult = await getTursoClient().execute({
-      sql: 'SELECT value FROM settings WHERE key = ?',
-      args: ['reservation_duration_minutes']
-    });
-    const durationMinutes = settingsResult.rows.length > 0 
-      ? Number(settingsResult.rows[0].value) 
-      : 10;
-    const expiresAt = Date.now() + (durationMinutes * 60 * 1000);
-
-    // Crear o actualizar reserva
-    await getTursoClient().execute({
-      sql: `INSERT INTO reservations (product_id, color, quantity, session_id, expires_at) 
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET 
-              quantity = excluded.quantity,
-              expires_at = excluded.expires_at`,
-      args: [productId, color, quantity, sessionId, expiresAt]
-    });
-
-    // Obtener stock disponible actualizado
-    const finalAvailable = await getAvailableStockFromTurso(productId, color);
-
-    return { success: true, data: { available: finalAvailable } };
-  } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Error al reservar'
-    };
   }
+
+  return { success: false, error: 'Error al reservar, intenta de nuevo' };
 }
 
 // ============================================================================
@@ -216,13 +210,12 @@ export async function reserveStockInTurso(
 // ============================================================================
 export async function releaseReservationInTurso(
   productId: string,
-  color: string,
   sessionId: string
 ): Promise<boolean> {
   try {
     await getTursoClient().execute({
-      sql: 'DELETE FROM reservations WHERE product_id = ? AND color = ? AND session_id = ?',
-      args: [productId, color, sessionId]
+      sql: 'DELETE FROM reservations WHERE product_id = ? AND session_id = ?',
+      args: [productId, sessionId]
     });
     return true;
   } catch {
@@ -231,48 +224,41 @@ export async function releaseReservationInTurso(
 }
 
 // ============================================================================
-// CONFIRMAR VENTA (reduce stock real y audita)
+// CONFIRMAR VENTA (atómico — reduce stock con condición)
 // ============================================================================
 export async function confirmSaleInTurso(
   productId: string,
-  color: string,
   quantity: number,
   orderId: string,
   sessionId: string
 ): Promise<SyncResult<void>> {
   try {
-    // 1. Obtener stock actual
-    const stockResult = await getTursoClient().execute({
-      sql: 'SELECT stock FROM product_colors WHERE product_id = ? AND name = ?',
-      args: [productId, color]
+    const client = getTursoClient();
+
+    // Reducir stock atómicamente solo si hay suficiente
+    const updateResult = await client.execute({
+      sql: 'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
+      args: [quantity, productId, quantity]
     });
 
-    if (stockResult.rows.length === 0) {
-      return { success: false, error: 'Producto no encontrado' };
-    }
-
-    const currentStock = Number(stockResult.rows[0].stock);
-    const newStock = currentStock - quantity;
-
-    if (newStock < 0) {
+    if (updateResult.rowsAffected === 0) {
       return { success: false, error: 'Stock insuficiente' };
     }
 
-    // 2. Reducir stock
-    await getTursoClient().execute({
-      sql: 'UPDATE product_colors SET stock = ? WHERE product_id = ? AND name = ?',
-      args: [newStock, productId, color]
+    // Leer stock resultante para auditoría
+    const stockResult = await client.execute({
+      sql: 'SELECT stock FROM products WHERE id = ?',
+      args: [productId]
+    });
+    const newStock = Number(stockResult.rows[0]?.stock) || 0;
+
+    await client.execute({
+      sql: `INSERT INTO stock_audit (product_id, event_type, quantity_change, stock_before, stock_after, order_id, notes)
+            VALUES (?, 'sale', ?, ?, ?, ?, 'Sale confirmed')`,
+      args: [productId, -quantity, newStock + quantity, newStock, orderId]
     });
 
-    // 3. Auditar venta
-    await getTursoClient().execute({
-      sql: `INSERT INTO stock_audit (product_id, color, event_type, quantity_change, stock_before, stock_after, order_id, notes)
-            VALUES (?, ?, 'sale', ?, ?, ?, ?, 'Sale confirmed')`,
-      args: [productId, color, -quantity, currentStock, newStock, orderId]
-    });
-
-    // 4. Liberar reserva
-    await releaseReservationInTurso(productId, color, sessionId);
+    await releaseReservationInTurso(productId, sessionId);
 
     return { success: true };
   } catch (error) {
@@ -311,8 +297,9 @@ export async function updateSettingInTurso(
 ): Promise<boolean> {
   try {
     await getTursoClient().execute({
-      sql: 'UPDATE settings SET value = ?, updated_by = ? WHERE key = ?',
-      args: [value, updatedBy, key]
+      sql: `INSERT INTO settings (key, value, updated_by) VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = unixepoch()`,
+      args: [key, value, updatedBy]
     });
     return true;
   } catch {
@@ -382,8 +369,8 @@ export async function addPhoneSubscription(phone: string): Promise<SyncResult<vo
 export async function addProductToTurso(product: Product): Promise<SyncResult<void>> {
   try {
     await getTursoClient().execute({
-      sql: `INSERT INTO products (id, name, edition, type, description, description_en, available, features)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO products (id, name, edition, type, description, description_en, price, stock, images, available, features, features_en)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         product.id,
         product.name,
@@ -391,25 +378,14 @@ export async function addProductToTurso(product: Product): Promise<SyncResult<vo
         product.type || 'snapback',
         product.description || '',
         product.descriptionEn || '',
+        product.price || 0,
+        product.stock || 0,
+        JSON.stringify(product.images || []),
         product.available ? 1 : 0,
-        product.features?.join(',') || ''
+        product.features?.join(',') || '',
+        product.featuresEn?.join(',') || ''
       ]
     });
-    
-    for (const color of product.colors) {
-      await getTursoClient().execute({
-        sql: `INSERT INTO product_colors (product_id, name, hex, price, stock, images)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: [
-          product.id,
-          color.name,
-          color.hex,
-          color.price,
-          color.stock,
-          JSON.stringify(color.images)
-        ]
-      });
-    }
     
     return { success: true };
   } catch (error) {
@@ -420,7 +396,8 @@ export async function addProductToTurso(product: Product): Promise<SyncResult<vo
 export async function updateProductInTurso(product: Product): Promise<SyncResult<void>> {
   try {
     await getTursoClient().execute({
-      sql: `UPDATE products SET name = ?, edition = ?, type = ?, description = ?, description_en = ?, available = ?, features = ?
+      sql: `UPDATE products SET name = ?, edition = ?, type = ?, description = ?, description_en = ?, 
+            price = ?, stock = ?, images = ?, available = ?, features = ?, features_en = ?
             WHERE id = ?`,
       args: [
         product.name,
@@ -428,31 +405,15 @@ export async function updateProductInTurso(product: Product): Promise<SyncResult
         product.type || 'snapback',
         product.description || '',
         product.descriptionEn || '',
+        product.price || 0,
+        product.stock || 0,
+        JSON.stringify(product.images || []),
         product.available ? 1 : 0,
         product.features?.join(',') || '',
+        product.featuresEn?.join(',') || '',
         product.id
       ]
     });
-    
-    await getTursoClient().execute({
-      sql: 'DELETE FROM product_colors WHERE product_id = ?',
-      args: [product.id]
-    });
-    
-    for (const color of product.colors) {
-      await getTursoClient().execute({
-        sql: `INSERT INTO product_colors (product_id, name, hex, price, stock, images)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: [
-          product.id,
-          color.name,
-          color.hex,
-          color.price,
-          color.stock,
-          JSON.stringify(color.images)
-        ]
-      });
-    }
     
     return { success: true };
   } catch (error) {
@@ -471,4 +432,20 @@ export async function deleteProductFromTurso(productId: string): Promise<SyncRes
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Error' };
   }
+}
+
+export async function getOrderByIdFromTurso(orderId: string) {
+  const result = await getTursoClient().execute({
+    sql: 'SELECT items, session_id, customer_name, customer_phone, shipping_address, total FROM orders WHERE id = ?',
+    args: [orderId]
+  });
+  return result.rows[0] || null;
+}
+
+export async function getProductStockFromTurso(productId: string): Promise<number> {
+  const result = await getTursoClient().execute({
+    sql: 'SELECT stock FROM products WHERE id = ?',
+    args: [productId]
+  });
+  return result.rows.length > 0 ? Number(result.rows[0].stock) : -1;
 }

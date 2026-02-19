@@ -4,17 +4,11 @@ import { rateLimit } from '@/lib/rate-limit';
 import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 60; // Cache 60 segundos
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-  const rateLimitResult = rateLimit(`products-${ip}`, 30, 60000);
-  
-  if (!rateLimitResult.success) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429 }
-    );
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  if (!rateLimit(`products-${ip}`, 30, 60000).success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   try {
@@ -28,13 +22,14 @@ export async function GET(req: NextRequest) {
     
     const metadata = {
       totalProducts: products.length,
-      totalStock: products.reduce((sum, p) => 
-        sum + p.colors.reduce((s: number, c) => s + (c.stock || 0), 0), 0),
+      totalStock: products.reduce((sum, p) => sum + (p.stock || 0), 0),
       lastUpdated: new Date().toISOString(),
     };
     
-    return NextResponse.json({ products, metadata });
-  } catch (error) {
+    const response = NextResponse.json({ products, metadata });
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+    return response;
+  } catch {
     return NextResponse.json({ error: 'Failed to load products' }, { status: 500 });
   }
 }

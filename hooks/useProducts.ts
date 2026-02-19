@@ -1,4 +1,3 @@
-// Shared products hook with lazy loading
 import { useEffect, useState } from 'react';
 import { apiCache } from '@/lib/api-cache';
 import type { Product } from '@/lib/products';
@@ -23,18 +22,13 @@ export function useProducts(lazy: boolean = false) {
     }
 
     if (!productsPromise || forceRefresh) {
-      const url = forceRefresh 
-        ? `/api/products?t=${Date.now()}` 
-        : '/api/products';
-      
+      if (forceRefresh) apiCache.invalidate('products');
+
       productsPromise = apiCache
-        .fetch<ProductsResponse>(url, { 
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
-        }, 120000) // 2 min cache
+        .fetch<ProductsResponse>('/api/products', undefined, 120000)
         .then(data => {
-          globalProducts = data.products;
-          return data.products;
+          globalProducts = data?.products || [];
+          return globalProducts;
         });
     }
 
@@ -42,15 +36,11 @@ export function useProducts(lazy: boolean = false) {
     productsPromise.then(prods => {
       setProducts(prods);
       setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   };
 
   useEffect(() => {
-    if (!lazy) {
-      loadProducts();
-    }
+    if (!lazy) loadProducts();
   }, [lazy]);
 
   return { products, loading, loadProducts };

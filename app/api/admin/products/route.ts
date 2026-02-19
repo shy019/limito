@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
+import { verifyAdminToken } from '@/lib/auth';
 
 import type { Product } from '@/lib/products';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +13,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token || !(await verifyAdminToken(token))) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const newProduct: Product = await request.json();
     
     if (!newProduct.descriptionEn) {
@@ -36,6 +42,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token || !(await verifyAdminToken(token))) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const updatedProduct: Product = await request.json();
     
     if (!updatedProduct.descriptionEn) {
@@ -60,6 +71,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token || !(await verifyAdminToken(token))) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await request.json();
     
     const result = await deleteProductFromTurso(id);

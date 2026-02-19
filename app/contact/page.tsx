@@ -273,8 +273,8 @@ export default function ContactoPage() {
 
             <div className="mt-8 pt-8 border-t border-white/20 text-center" style={{ marginLeft: '4rem' }}>
               <p className="text-sm font-bold mb-2" style={{ color: '#ffffff' }}>{t('directEmail')}</p>
-              <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hola@limito.co'}`} className="text-lg font-black hover:underline" style={{ color: 'var(--accent-color, #ffd624)' }}>
-                {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hola@limito.co'}
+              <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'limitohats@gmail.com'}`} className="text-lg font-black hover:underline" style={{ color: 'var(--accent-color, #ffd624)' }}>
+                {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'limitohats@gmail.com'}
               </a>
             </div>
           </div>

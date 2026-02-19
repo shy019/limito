@@ -8,7 +8,6 @@ export interface OrderEmailData {
   customerName: string;
   items: Array<{
     name: string;
-    color: string;
     quantity: number;
     price: number;
   }>;
@@ -36,7 +35,7 @@ export interface TrackingEmailData {
 export async function sendOrderConfirmation(data: OrderEmailData) {
   const itemsHtml = data.items.map(item => `
     <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name} - ${item.color}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${item.price.toLocaleString('es-CO')}</td>
     </tr>
@@ -128,7 +127,7 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
 
 export async function sendPartnerNotification(data: OrderEmailData) {
   const itemsText = data.items.map(item => 
-    `${item.name} - ${item.color} x${item.quantity} = $${item.price.toLocaleString('es-CO')}`
+    `${item.name} x${item.quantity} = $${item.price.toLocaleString('es-CO')}`
   ).join('\n');
 
   const text = `

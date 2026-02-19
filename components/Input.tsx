@@ -5,6 +5,7 @@ interface InputProps {
   onChange: (value: string) => void;
   required?: boolean;
   error?: boolean;
+  'data-testid'?: string;
 }
 
 export default function Input({ 
@@ -13,7 +14,8 @@ export default function Input({
   value, 
   onChange, 
   required = false,
-  error = false
+  error = false,
+  'data-testid': testId
 }: InputProps) {
   const isPassword = type === 'password';
   
@@ -33,6 +35,7 @@ export default function Input({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
+        data-testid={testId}
         className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none font-bold transition-all"
         style={{
           borderColor: error ? '#ff0000' : 'rgba(255, 255, 255, 0.3)',

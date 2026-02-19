@@ -120,12 +120,13 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/admin/orders');
       const data = await res.json();
-      setOrders(data.orders || []);
+      const ordersList = data.orders || [];
+      setOrders(ordersList);
 
-      const totalRevenue = data.orders.reduce((sum: number, o: Order) => sum + o.total, 0);
-      const pendingOrders = data.orders.filter((o: Order) => o.status === 'pending').length;
+      const totalRevenue = ordersList.reduce((sum: number, o: Order) => sum + o.total, 0);
+      const pendingOrders = ordersList.filter((o: Order) => o.status === 'pending').length;
       setStats({
-        totalOrders: data.orders.length,
+        totalOrders: ordersList.length,
         totalRevenue,
         pendingOrders
       });
@@ -205,11 +206,7 @@ export default function AdminPage() {
     const freshProduct = products.find(p => p.id === productId);
     if (freshProduct) {
       setEditingProduct(productId);
-      const form = JSON.parse(JSON.stringify(freshProduct));
-      if (!Array.isArray(form.colors)) {
-        form.colors = [];
-      }
-      setEditForm(form);
+      setEditForm(JSON.parse(JSON.stringify(freshProduct)));
     }
   };
 
@@ -226,22 +223,10 @@ export default function AdminPage() {
       return;
     }
 
-    // Validar que tenga al menos un color
-    if (!Array.isArray(editForm.colors) || editForm.colors.length === 0) {
-      setToast({ message: 'El producto debe tener al menos un color', type: 'error' });
+    // Validar precio
+    if (!editForm.price || editForm.price <= 0) {
+      setToast({ message: 'El producto debe tener un precio válido', type: 'error' });
       return;
-    }
-
-    // Validar que cada color tenga precio y stock
-    for (const color of editForm.colors) {
-      if (!color.price || color.price <= 0) {
-        setToast({ message: `El color "${color.name}" debe tener un precio válido`, type: 'error' });
-        return;
-      }
-      if (color.stock === undefined || color.stock < 0) {
-        setToast({ message: `El color "${color.name}" debe tener stock definido (puede ser 0)`, type: 'error' });
-        return;
-      }
     }
 
     // Validar nombre de producto duplicado
@@ -254,21 +239,11 @@ export default function AdminPage() {
       return;
     }
 
-    // Validar nombres de color duplicados
-    if (Array.isArray(editForm.colors)) {
-      const colorNames = editForm.colors.map(c => c.name.toLowerCase().trim());
-      const duplicateColor = colorNames.find((name, idx) => colorNames.indexOf(name) !== idx);
-      if (duplicateColor) {
-        setToast({ message: `Color duplicado: ${duplicateColor}`, type: 'error' });
-        return;
-      }
-    }
-
     try {
       // Subir imágenes pendientes a Cloudinary
-      const updatedColors = [...(editForm.colors || [])];
+      const updatedImages = [...(editForm.images || [])];
       for (const [key, base64Array] of Object.entries(pendingImages)) {
-        const [colorIdx, imgIdx] = key.split('-').map(Number);
+        const imgIdx = parseInt(key);
         const base64 = base64Array[0];
         
         if (base64.startsWith('data:image')) {
@@ -278,7 +253,6 @@ export default function AdminPage() {
             body: JSON.stringify({
               action: 'upload',
               productId: editForm.id,
-              colorName: updatedColors[colorIdx].name,
               index: imgIdx + 1,
               base64Image: base64
             })
@@ -286,7 +260,7 @@ export default function AdminPage() {
           
           const data = await res.json();
           if (data.success) {
-            updatedColors[colorIdx].images[imgIdx] = data.path;
+            updatedImages[imgIdx] = data.path;
           }
         }
       }
@@ -294,10 +268,9 @@ export default function AdminPage() {
       // Limpiar imágenes pendientes
       setPendingImages({});
       
-      // Actualizar editForm con URLs de Cloudinary
-      const finalForm = { ...editForm, colors: updatedColors };
+      const finalForm = { ...editForm, images: updatedImages };
 
-      // Verificar si es nuevo: debe tener ID temporal Y no existir en la lista de productos
+      // Verificar si es nuevo
       const isNew = finalForm.id?.startsWith('limito-new-') && !products.find(p => p.id === finalForm.id);
 
       const saveRes = await fetch('/api/admin/products', {
@@ -330,165 +303,67 @@ export default function AdminPage() {
     }
   };
 
-  const uploadImage = async (file: File, colorIdx: number, imgIdx: number) => {
-    // Validar tipo de archivo
+  const uploadImage = async (file: File, imgIdx: number) => {
     if (!file.type.startsWith('image/')) {
       setToast({ message: 'Solo se permiten archivos de imagen', type: 'error' });
       return;
     }
-    
-    // Validar tamaño (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setToast({ message: 'La imagen no puede superar 5MB', type: 'error' });
       return;
     }
-    
     const reader = new FileReader();
     reader.onloadend = async () => {
-      if ('colors' in editForm && Array.isArray(editForm.colors)) {
-        const base64 = reader.result as string;
-        const key = `${colorIdx}-${imgIdx}`;
-        
-        // Guardar base64 en estado temporal
-        setPendingImages(prev => ({ ...prev, [key]: [base64] }));
-        
-        // Actualizar preview en el formulario
-        const newColors = [...editForm.colors];
-        newColors[colorIdx].images[imgIdx] = base64;
-        setEditForm({ ...editForm, colors: newColors });
-      }
+      const base64 = reader.result as string;
+      setPendingImages(prev => ({ ...prev, [String(imgIdx)]: [base64] }));
+      const newImages = [...(editForm.images || [])];
+      newImages[imgIdx] = base64;
+      setEditForm({ ...editForm, images: newImages });
     };
     reader.readAsDataURL(file);
   };
 
-  const addImage = (colorIdx: number, file: File) => {
+  const addImage = (file: File) => {
     if (!file) return;
-    
-    // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
       setToast({ message: 'Solo se permiten archivos de imagen', type: 'error' });
       return;
     }
-    
-    // Validar tamaño (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setToast({ message: 'La imagen no puede superar 5MB', type: 'error' });
       return;
     }
-    
     const reader = new FileReader();
     reader.onloadend = async () => {
-      if ('colors' in editForm && Array.isArray(editForm.colors)) {
-        try {
-          const currentImages = editForm.colors[colorIdx].images;
-          const res = await fetch('/api/admin/images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'upload',
-              productId: editForm.id,
-              colorName: editForm.colors[colorIdx].name,
-              index: currentImages.length + 1,
-              base64Image: reader.result as string
-            })
-          });
-
-          const data = await res.json();
-          if (data.success) {
-            const newColors = [...editForm.colors];
-            newColors[colorIdx].images.push(data.path);
-            setEditForm({ ...editForm, colors: newColors });
-          }
-        } catch (error) {
-          console.error('Error uploading image:', error);
-          setToast({ message: 'Error al subir imagen', type: 'error' });
+      try {
+        const currentImages = editForm.images || [];
+        const res = await fetch('/api/admin/images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'upload',
+            productId: editForm.id,
+            index: currentImages.length + 1,
+            base64Image: reader.result as string
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setEditForm({ ...editForm, images: [...currentImages, data.path] });
         }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        setToast({ message: 'Error al subir imagen', type: 'error' });
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const getColorName = (hex: string): string | null => {
-    const colorMap: Record<string, string> = {
-      '#000000': 'Negro',
-      '#ffffff': 'Blanco',
-      '#ff0000': 'Rojo',
-      '#8b0000': 'Rojo Oscuro',
-      '#dc143c': 'Carmesí',
-      '#0000ff': 'Azul',
-      '#000080': 'Azul Marino',
-      '#4169e1': 'Azul Rey',
-      '#1e90ff': 'Azul Cielo',
-      '#00bfff': 'Azul Profundo',
-      '#87ceeb': 'Azul Claro',
-      '#00ff00': 'Verde',
-      '#008000': 'Verde Oscuro',
-      '#00ff7f': 'Verde Primavera',
-      '#32cd32': 'Verde Lima',
-      '#90ee90': 'Verde Claro',
-      '#ffff00': 'Amarillo',
-      '#ffd700': 'Dorado',
-      '#ffa500': 'Naranja',
-      '#ff8c00': 'Naranja Oscuro',
-      '#ff4500': 'Naranja Rojizo',
-      '#800080': 'Morado',
-      '#9370db': 'Púrpura Medio',
-      '#8a2be2': 'Violeta',
-      '#4b0082': 'Índigo',
-      '#ffc0cb': 'Rosa',
-      '#ff69b4': 'Rosa Fuerte',
-      '#ff1493': 'Rosa Profundo',
-      '#808080': 'Gris',
-      '#c0c0c0': 'Plata',
-      '#696969': 'Gris Oscuro',
-      '#d3d3d3': 'Gris Claro',
-      '#a52a2a': 'Café',
-      '#8b4513': 'Marrón',
-      '#d2691e': 'Chocolate',
-      '#deb887': 'Beige',
-      '#f5deb3': 'Trigo',
-      '#00ffff': 'Cian',
-      '#ff00ff': 'Magenta',
-      '#00ced1': 'Turquesa',
-      '#20b2aa': 'Verde Agua',
-      'var(--accent-color, #ffd624)': 'Amarillo Limito',
-    };
-
-    const normalized = hex.toLowerCase();
-    if (colorMap[normalized]) return colorMap[normalized];
-
-    const hexToRgb = (h: string) => {
-      const r = parseInt(h.slice(1, 3), 16);
-      const g = parseInt(h.slice(3, 5), 16);
-      const b = parseInt(h.slice(5, 7), 16);
-      return { r, g, b };
-    };
-
-    const distance = (c1: { r: number; g: number; b: number }, c2: { r: number; g: number; b: number }) => {
-      return Math.sqrt(Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2));
-    };
-
-    const inputRgb = hexToRgb(normalized);
-    let closestColor = null;
-    let minDistance = 150;
-
-    for (const [hexColor, name] of Object.entries(colorMap)) {
-      const colorRgb = hexToRgb(hexColor);
-      const dist = distance(inputRgb, colorRgb);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestColor = name;
-      }
-    }
-
-    return closestColor;
-  };
-
-  const removeImage = (colorIdx: number, imgIdx: number) => {
-    if ('colors' in editForm && Array.isArray(editForm.colors)) {
-      const newColors = [...editForm.colors];
-      newColors[colorIdx].images.splice(imgIdx, 1);
-      setEditForm({ ...editForm, colors: newColors });
+  const removeImage = (imgIdx: number) => {
+    if (Array.isArray(editForm.images)) {
+      const newImages = [...editForm.images];
+      newImages.splice(imgIdx, 1);
+      setEditForm({ ...editForm, images: newImages });
     }
   };
 
@@ -516,7 +391,7 @@ export default function AdminPage() {
         setAuthenticated(true);
         const prodRes = await fetch('/api/admin/products/all');
         const prodData = await prodRes.json();
-        setProducts(prodData.products);
+        setProducts(prodData.products || []);
       } else {
         setError('Contraseña incorrecta');
         setPassword('');
@@ -629,14 +504,11 @@ export default function AdminPage() {
                     description: '',
                     descriptionEn: '',
                     available: true,
-                    colors: [{
-                      name: 'Negro',
-                      hex: '#000000',
-                      price: 0,
-                      stock: 0,
-                      images: []
-                    }],
-                    features: ['Edición limitada', 'Logo bordado', 'Ajustable']
+                    price: 0,
+                    stock: 0,
+                    images: [],
+                    features: [],
+                    featuresEn: []
                   };
                   setEditingProduct(newProduct.id);
                   setEditForm(newProduct);
@@ -648,8 +520,8 @@ export default function AdminPage() {
               </button>
             </div>
             {(editingProduct?.startsWith('limito-new-') 
-              ? [editForm as Product, ...products.filter(p => p.id !== editForm.id)] 
-              : products
+              ? [editForm as Product, ...(products || []).filter(p => p.id !== editForm.id)] 
+              : (products || [])
             ).map((product) => (
               <div key={product.id} className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg">
                 {editingProduct === product.id ? (
@@ -712,181 +584,82 @@ export default function AdminPage() {
                         />
                       </div>
 
-                      <div className="border-t-2 border-gray-200 pt-8 mt-8">
-                        <div className="flex items-center justify-between mb-6">
-                          <h4 className="text-base font-black uppercase tracking-wide flex items-center gap-2" style={{ color: '#0A0A0A' }}>
-                            <Upload className="w-5 h-5" />
-                            Galería de Imágenes por Color
-                          </h4>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if ('colors' in editForm && Array.isArray(editForm.colors)) {
-                                const newColor = {
-                                  name: 'Nuevo Color',
-                                  hex: '#000000',
-                                  price: 0,
-                                  stock: 0,
-                                  images: []
-                                };
-                                setEditForm({ ...editForm, colors: [...editForm.colors, newColor] });
-                              }
-                            }}
-                            className="px-6 py-3 bg-[var(--accent-color, #ffd624)] text-black text-sm font-black rounded-lg hover:brightness-110 transition-all"
-                          >
-                            + Añadir Color
-                          </button>
-                        </div>
-                        <div className="space-y-6">
-                          {Array.isArray(editForm.colors) && editForm.colors.map((color: Product['colors'][0], colorIdx: number) => (
-                            <div key={colorIdx} className="border-2 border-gray-200 rounded-lg p-4 md:p-6 hover:border-black transition-all bg-gray-50 mb-8 overflow-hidden">
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <input
-                                    id={`color-picker-${colorIdx}`}
-                                    name={`color-picker-${colorIdx}`}
-                                    type="color"
-                                    value={color.hex}
-                                    onChange={(e) => {
-                                      const newColors = [...(editForm.colors || [])];
-                                      newColors[colorIdx].hex = e.target.value;
-
-                                      const detectedName = getColorName(e.target.value);
-                                      if (detectedName) {
-                                        newColors[colorIdx].name = detectedName;
-                                      }
-
-                                      setEditForm({ ...editForm, colors: newColors });
-                                    }}
-                                    className="w-8 h-8 rounded-full border-2 border-black shadow-md cursor-pointer"
-                                  />
-                                  <input
-                                    id={`color-name-${colorIdx}`}
-                                    name={`color-name-${colorIdx}`}
-                                    type="text"
-                                    value={color.name}
-                                    onChange={(e) => {
-                                      const newColors = [...(editForm.colors || [])];
-                                      newColors[colorIdx].name = e.target.value;
-                                      setEditForm({ ...editForm, colors: newColors });
-                                    }}
-                                    className="text-base font-black px-2 py-1 border-2 border-transparent hover:border-gray-300 rounded focus:outline-none focus:border-black"
-                                    style={{ color: '#0A0A0A' }}
-                                  />
-                                  <span className="text-xs font-bold px-2 py-1 bg-white rounded-full" style={{ color: '#6B6B6B' }}>
-                                    {color.images.length} {color.images.length === 1 ? 'foto' : 'fotos'}
-                                  </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <label htmlFor={`color-price-${colorIdx}`} className="block text-xs font-bold mb-1" style={{ color: '#6B6B6B' }}>Precio</label>
-                                    <input
-                                      id={`color-price-${colorIdx}`}
-                                      name={`color-price-${colorIdx}`}
-                                      type="number"
-                                      value={color.price || 0}
-                                      onChange={(e) => {
-                                        const newColors = [...(editForm.colors || [])];
-                                        newColors[colorIdx].price = parseInt(e.target.value) || 0;
-                                        setEditForm({ ...editForm, colors: newColors });
-                                      }}
-                                      onFocus={(e) => e.target.select()}
-                                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-bold"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`color-stock-${colorIdx}`} className="block text-xs font-bold mb-1" style={{ color: '#6B6B6B' }}>Stock</label>
-                                    <input
-                                      id={`color-stock-${colorIdx}`}
-                                      name={`color-stock-${colorIdx}`}
-                                      type="number"
-                                      min="0"
-                                      value={color.stock || 0}
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value) || 0;
-                                        if (val < 0) return;
-                                        const newColors = [...(editForm.colors || [])];
-                                        newColors[colorIdx].stock = val;
-                                        setEditForm({ ...editForm, colors: newColors });
-                                      }}
-                                      onFocus={(e) => e.target.select()}
-                                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-bold"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                  <label htmlFor={`color-image-${colorIdx}`} className="flex-1 px-4 py-2 bg-black text-white text-xs font-black rounded-lg hover:bg-gray-800 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                                    <Upload className="w-4 h-4" />
-                                    Añadir Foto
-                                    <input
-                                      id={`color-image-${colorIdx}`}
-                                      name={`color-image-${colorIdx}`}
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          addImage(colorIdx, file);
-                                          e.target.value = '';
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      if ('colors' in editForm && Array.isArray(editForm.colors)) {
-                                        const newColors = [...editForm.colors];
-                                        newColors.splice(colorIdx, 1);
-                                        setEditForm({ ...editForm, colors: newColors });
-                                      }
-                                    }}
-                                    className="flex-1 px-4 py-2 bg-red-500 text-white text-xs font-black rounded-lg hover:bg-red-600 transition-all"
-                                  >
-                                    Eliminar Color
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mt-4">
-                                {color.images.map((img: string, idx: number) => {
-                                  return (
-                                  <div key={idx} className="relative aspect-square rounded-lg border-2 border-gray-200 hover:border-black transition-all group" style={{ minHeight: '80px' }}>
-                                    <Image src={img} alt={`${color.name} ${idx + 1}`} fill className="object-cover rounded-lg" loading="lazy" sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw" unoptimized />
-                                    <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-black/60 backdrop-blur-sm rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                      <label className="flex-1 h-10 bg-[var(--accent-color, #ffd624)] rounded-lg flex items-center justify-center cursor-pointer hover:brightness-110 transition-all shadow-lg">
-                                        <Upload className="w-5 h-5 text-black" />
-                                        <input
-                                          id={`replace-image-${colorIdx}-${idx}`}
-                                          name={`replace-image-${colorIdx}-${idx}`}
-                                          type="file"
-                                          accept="image/*"
-                                          className="hidden"
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                              uploadImage(file, colorIdx, idx);
-                                              e.target.value = '';
-                                            }
-                                          }}
-                                        />
-                                      </label>
-                                      <button
-                                        onClick={(e) => { e.preventDefault(); removeImage(colorIdx, idx); }}
-                                        className="flex-1 h-10 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center font-bold text-xl transition-all shadow-lg"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  </div>
-                                )})}
-                              </div>
-                            </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-black mb-2 uppercase tracking-wide" style={{ color: '#6B6B6B' }}>Checks (ES) — máx 3</label>
+                          {[0, 1, 2].map(i => (
+                            <input key={`feat-${i}`} type="text" value={(editForm.features || [])[i] || ''}
+                              onChange={(e) => {
+                                const f = [...(editForm.features || [])];
+                                f[i] = e.target.value;
+                                setEditForm({ ...editForm, features: f.filter((x, idx) => idx <= i || x) });
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:outline-none focus:border-black font-medium text-sm mb-2"
+                              placeholder={`Check ${i + 1}`}
+                            />
                           ))}
                         </div>
+                        <div>
+                          <label className="block text-xs font-black mb-2 uppercase tracking-wide" style={{ color: '#6B6B6B' }}>Checks (EN) — max 3</label>
+                          {[0, 1, 2].map(i => (
+                            <input key={`feat-en-${i}`} type="text" value={(editForm.featuresEn || [])[i] || ''}
+                              onChange={(e) => {
+                                const f = [...(editForm.featuresEn || [])];
+                                f[i] = e.target.value;
+                                setEditForm({ ...editForm, featuresEn: f.filter((x, idx) => idx <= i || x) });
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:outline-none focus:border-black font-medium text-sm mb-2"
+                              placeholder={`Check ${i + 1} (EN)`}
+                            />
+                          ))}
+                        </div>
+                      </div>
 
+                      <div className="border-t-2 border-gray-200 pt-8 mt-8">
+                        <div className="grid grid-cols-2 gap-8">
+                          <div>
+                            <label htmlFor="product-price" className="block text-xs font-black mb-2 uppercase tracking-wide" style={{ color: '#6B6B6B' }}>Precio</label>
+                            <input id="product-price" name="product-price" type="number" value={editForm.price || 0}
+                              onChange={(e) => setEditForm({ ...editForm, price: parseInt(e.target.value) || 0 })}
+                              onFocus={(e) => e.target.select()}
+                              className="w-full px-4 py-3 border-2 border-gray-500 rounded-lg focus:outline-none focus:border-black font-bold text-lg" />
+                          </div>
+                          <div>
+                            <label htmlFor="product-stock" className="block text-xs font-black mb-2 uppercase tracking-wide" style={{ color: '#6B6B6B' }}>Stock</label>
+                            <input id="product-stock" name="product-stock" type="number" min="0" value={editForm.stock || 0}
+                              onChange={(e) => { const val = parseInt(e.target.value) || 0; if (val >= 0) setEditForm({ ...editForm, stock: val }); }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-full px-4 py-3 border-2 border-gray-500 rounded-lg focus:outline-none focus:border-black font-bold text-lg" />
+                          </div>
+                        </div>
+
+                        <div className="mt-8">
+                          <div className="flex items-center justify-between mb-6">
+                            <h4 className="text-base font-black uppercase tracking-wide flex items-center gap-2" style={{ color: '#0A0A0A' }}>
+                              <Upload className="w-5 h-5" />
+                              Galería de Imágenes
+                            </h4>
+                            <label className="px-6 py-3 bg-black text-white text-sm font-black rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2 cursor-pointer">
+                              <Upload className="w-4 h-4" />
+                              Añadir Foto
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) { addImage(file); e.target.value = ''; } }} />
+                            </label>
+                          </div>
+                          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                            {Array.isArray(editForm.images) && editForm.images.map((img: string, idx: number) => (
+                              <div key={idx} className="relative aspect-square rounded-lg border-2 border-gray-200 hover:border-black transition-all group" style={{ minHeight: '80px' }}>
+                                <Image src={img} alt={`Imagen ${idx + 1}`} fill className="object-cover rounded-lg" loading="lazy" sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw" unoptimized />
+                                <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-black/60 backdrop-blur-sm rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                  <label className="flex-1 h-10 bg-[var(--accent-color, #ffd624)] rounded-lg flex items-center justify-center cursor-pointer hover:brightness-110 transition-all shadow-lg">
+                                    <Upload className="w-5 h-5 text-black" />
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) { uploadImage(file, idx); e.target.value = ''; } }} />
+                                  </label>
+                                  <button onClick={(e) => { e.preventDefault(); removeImage(idx); }} className="flex-1 h-10 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center font-bold text-xl transition-all shadow-lg">×</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -928,24 +701,14 @@ export default function AdminPage() {
                             <span className="font-black" style={{ color: '#0A0A0A' }}>{product.edition}</span>
                           </div>
                           <div>
-                            <span className="text-xs font-bold" style={{ color: '#6B6B6B' }}>Stock Total: </span>
-                            <span className="font-black text-lg" style={{ color: Array.isArray(product.colors) && product.colors.reduce((sum, c) => sum + c.stock, 0) > 10 ? '#16A34A' : '#DC2626' }}>
-                              {Array.isArray(product.colors) ? product.colors.reduce((sum, c) => sum + c.stock, 0) : 0}
-                            </span>
+                            <span className="text-xs font-bold" style={{ color: '#6B6B6B' }}>Precio: </span>
+                            <span className="font-black" style={{ color: '#0A0A0A' }}>${(product.price || 0).toLocaleString()}</span>
                           </div>
                           <div>
-                            <span className="text-xs font-bold" style={{ color: '#6B6B6B' }}>Colores:</span>
-                            <div className="mt-2 space-y-2">
-                              {Array.isArray(product.colors) && product.colors.map((color, idx) => (
-                                <div key={idx} className="flex items-center gap-4">
-                                  <span className="inline-block w-4 h-4 rounded-full border border-gray-300" style={{ backgroundColor: color.hex }}></span>
-                                  <span className="font-black min-w-[100px]" style={{ color: '#0A0A0A' }}>{color.name}</span>
-                                  <span className="font-black min-w-[80px]" style={{ color: '#0A0A0A' }}>${color.price.toLocaleString()}</span>
-                                  <span className="text-xs font-bold" style={{ color: '#6B6B6B' }}>Stock:</span>
-                                  <span className="font-black text-lg" style={{ color: color.stock > 5 ? '#16A34A' : '#DC2626' }}>{color.stock}</span>
-                                </div>
-                              ))}
-                            </div>
+                            <span className="text-xs font-bold" style={{ color: '#6B6B6B' }}>Stock: </span>
+                            <span className="font-black text-lg" style={{ color: (product.stock || 0) > 10 ? '#16A34A' : '#DC2626' }}>
+                              {product.stock || 0}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1144,7 +907,7 @@ export default function AdminPage() {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ 
-                            mode: 'password',
+                            mode: storeMode,
                             accentColor: color
                           }),
                         });

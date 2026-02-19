@@ -9,13 +9,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { productId, color, sessionId } = await req.json();
+    const { productId, sessionId } = await req.json();
 
-    if (!productId || !color || !sessionId) {
+    if (!productId || !sessionId) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    await releaseReservationInTurso(productId, color, sessionId);
+    await releaseReservationInTurso(productId, sessionId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

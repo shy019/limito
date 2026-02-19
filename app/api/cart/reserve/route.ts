@@ -9,13 +9,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
     }
 
-    const { productId, color, quantity, sessionId } = await req.json();
+    const { productId, quantity, sessionId } = await req.json();
 
-    if (!productId || !color || !quantity || !sessionId) {
+    if (!productId || !quantity || !sessionId) {
       return NextResponse.json({ success: false, error: 'Datos incompletos' }, { status: 400 });
     }
 
-    const result = await reserveStockInTurso(productId, color, quantity, sessionId);
+    const qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 5) {
+      return NextResponse.json({ success: false, error: 'Cantidad inválida' }, { status: 400 });
+    }
+
+    const result = await reserveStockInTurso(productId, qty, sessionId);
     
     if (!result.success) {
       return NextResponse.json({ 

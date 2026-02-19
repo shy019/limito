@@ -25,10 +25,7 @@ export async function POST(req: NextRequest) {
     const validItems = items.filter(item => {
       const product = result.data!.find(p => p.id === item.productId);
       if (!product || !product.available) return false;
-      
-      const color = product.colors.find(c => c.name === item.color);
-      if (!color || color.stock <= 0) return false;
-      
+      if (product.stock <= 0) return false;
       return true;
     });
 

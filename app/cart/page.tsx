@@ -38,7 +38,6 @@ export default function CarritoPage() {
   const [locale, setLocale] = useState('es');
   const [cartLoading, setCartLoading] = useState(true);
   const t = useTranslations('cart');
-  const tCatalog = useTranslations('catalog');
 
   const subtotal = cart.getTotal();
   const { cost: shippingCost, zone: shippingZone } = useMemo(() =>
@@ -259,7 +258,10 @@ export default function CarritoPage() {
           <button onClick={() => window.location.href = '/catalog'} className="fixed hover:bg-white rounded-full z-50 back-button" style={{ padding: '0.5rem', left: '1.5rem', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <div className="mb-8 flex items-center justify-end">
+
+          <h1 className="text-6xl font-black mb-4 text-center" style={{ color: '#ffffff' }}>{t('title')}</h1>
+
+          <div className="flex justify-end" style={{ marginBottom: '1rem' }}>
             <button
               onClick={() => setShowClearModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all hover:scale-105"
@@ -270,37 +272,33 @@ export default function CarritoPage() {
             </button>
           </div>
 
-          <h1 className="text-6xl font-black mb-12 text-center" style={{ color: '#ffffff' }}>{t('title')}</h1>
-
           <div className="grid md:grid-cols-3 gap-12">
-            <div className="md:col-span-2 space-y-6">
+            <div className="md:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {items.map((item) => (
-                <div key={`${item.productId}-${item.color}`} className="bg-white/10 backdrop-blur-md rounded-2xl hover:border-[var(--accent-color, #ffd624)] transition-all cart-item" style={{ border: 'none' }}>
+                <div key={item.productId} className="rounded-2xl transition-all cart-item" style={{ backgroundColor: 'rgba(20, 20, 20, 0.9)' }}>
                   <div className="flex gap-6 cart-item-content">
                     <div className="flex-1">
-                      <h3 className="text-2xl font-black mb-2" style={{ color: '#ffffff' }}>{item.name}</h3>
-                      <p className="text-sm mb-3" style={{ color: 'var(--accent-color, #ffd624)' }}>
-                        {t('color')}: <span className="font-bold">{tCatalog(item.color) || item.color}</span>
-                      </p>
-                      <p className="text-3xl font-black" style={{ color: '#ffffff' }}>{formatPrice(item.price)}</p>
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="text-2xl font-black" style={{ color: '#ffffff' }}>{item.name}</h3>
+                        <button onClick={() => cart.remove(item.productId)} className="hover:scale-110 transition-all" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+                          <Trash2 className="w-4 h-4" style={{ color: '#ff0000' }} />
+                        </button>
+                      </div>
+                      <p className="text-3xl font-black" style={{ color: 'var(--accent-color, #ffd624)', marginTop: '-4px' }}>{formatPrice(item.price)}</p>
                     </div>
 
-                    <div className="flex flex-col items-end justify-between">
-                      <button onClick={() => cart.remove(item.productId, item.color)} className="hover:scale-110 transition-transform" style={{ color: '#ff0000' }}>
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-end justify-end">
+                      <div className="flex items-center" style={{ gap: '0.5rem' }}>
                         <button onClick={async () => {
                           if (item.quantity === 1) {
-                            await cart.remove(item.productId, item.color);
+                            await cart.remove(item.productId);
                           } else {
-                            await cart.updateQuantity(item.productId, item.color, item.quantity - 1);
+                            await cart.updateQuantity(item.productId, item.quantity - 1);
                           }
-                        }} className="w-8 h-8 flex items-center justify-center rounded-full transition-all" style={{ backgroundColor: '#000000', color: 'var(--accent-color, #ffd624)', border: '2px solid var(--accent-color, #ffd624)' }}>
-                          <Minus className="w-3 h-3" />
+                        }} className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-105" style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+                          <Minus className="w-3.5 h-3.5" style={{ color: '#ffffff' }} />
                         </button>
-                        <span className="w-10 text-center font-black text-xl" style={{ color: 'var(--accent-color, #ffd624)' }}>{item.quantity}</span>
+                        <span className="w-8 text-center font-black text-xl" style={{ color: 'var(--accent-color, #ffd624)' }}>{item.quantity}</span>
                         <button
                           onClick={async () => {
                             const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -308,13 +306,13 @@ export default function CarritoPage() {
                               setToast({ message: t('maxTotal'), type: 'error' });
                               return;
                             }
-                            await cart.updateQuantity(item.productId, item.color, item.quantity + 1);
+                            await cart.updateQuantity(item.productId, item.quantity + 1);
                           }}
                           disabled={item.quantity >= 5 || items.reduce((sum, i) => sum + i.quantity, 0) >= 5}
-                          className="w-8 h-8 flex items-center justify-center rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed"
                           style={{ backgroundColor: 'var(--accent-color, #ffd624)', color: '#000000' }}
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -336,7 +334,7 @@ export default function CarritoPage() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl focus:outline-none font-black bg-white/20 backdrop-blur-md border border-white/30 text-white"
-                    style={{ fontSize: '1rem' }}
+                    style={{ fontSize: '1rem', boxSizing: 'border-box' }}
                   >
                     {shippingZones.map(zone => (
                       <option key={zone.id} value={zone.name} style={{ backgroundColor: '#000', color: '#fff' }}>
@@ -387,7 +385,7 @@ export default function CarritoPage() {
                         value={promoCode}
                         onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                         className="flex-1 px-4 py-3 rounded-xl focus:outline-none font-black bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/50"
-                        style={{ fontSize: '1rem' }}
+                        style={{ fontSize: '1rem', boxSizing: 'border-box', minWidth: 0 }}
                       />
                       <button
                         onClick={handleApplyPromo}
@@ -411,7 +409,7 @@ export default function CarritoPage() {
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl focus:outline-none font-black bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/50"
-                      style={{ fontSize: '1rem' }}
+                      style={{ fontSize: '1rem', boxSizing: 'border-box' }}
                       required
                     />
                   </div>
@@ -423,7 +421,7 @@ export default function CarritoPage() {
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl focus:outline-none font-black bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/50"
-                      style={{ fontSize: '1rem' }}
+                      style={{ fontSize: '1rem', boxSizing: 'border-box' }}
                       required
                     />
                   </div>
@@ -435,14 +433,14 @@ export default function CarritoPage() {
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ''))}
                       className="w-full px-4 py-3 rounded-xl focus:outline-none font-black bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/50"
-                      style={{ fontSize: '1rem' }}
+                      style={{ fontSize: '1rem', boxSizing: 'border-box' }}
                       maxLength={10}
                       required
                     />
                   </div>
                 </div>
 
-                <button onClick={handleCheckout} disabled={submitting} className="w-full uppercase tracking-wider transition-all disabled:opacity-50 mb-6 relative overflow-hidden group" style={{ backgroundColor: '#5433EB', color: '#FFFFFF', fontSize: '1rem', height: '56px', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(84, 51, 235, 0.3)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em' }}>
+                <button onClick={handleCheckout} disabled={submitting} className="w-full uppercase tracking-wider transition-all disabled:opacity-50 mb-6 relative overflow-hidden group" style={{ backgroundColor: 'var(--accent-color, #D4AF37)', color: '#000000', fontSize: '1rem', height: '56px', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(212, 175, 55, 0.3)', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '0.05em', marginTop: '10px' }}>
                   <span className="relative z-10">{submitting ? t('processing') : t('checkout')}</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>

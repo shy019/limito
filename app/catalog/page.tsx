@@ -8,7 +8,6 @@ import { useTranslations } from 'next-intl';
 import { ChevronLeft, Check, Minus, Plus } from 'lucide-react';
 import { formatPrice, type Product } from '@/lib/products';
 import { cart } from '@/lib/cart';
-import LoadingScreen from '@/components/LoadingScreen';
 import Toast from '@/components/Toast';
 import Header from '@/components/Header';
 import ResponsiveProductImage from '@/components/ResponsiveProductImage';
@@ -46,7 +45,6 @@ export default function CatalogoPage() {
 
     const handleCartUpdate = () => {
       setCartCount(cart.getCount());
-      // NO recargar productos, solo actualizar contador
     };
     window.addEventListener('cart-updated', handleCartUpdate);
 
@@ -74,7 +72,7 @@ export default function CatalogoPage() {
   };
 
   if (configLoading || productsLoading) {
-    return <LoadingScreen />;
+    return null;
   }
 
   return (
@@ -95,7 +93,7 @@ export default function CatalogoPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
-              {products.filter(p => p.id).map((product) => (
+              {(products || []).filter(p => p.id).sort((a, b) => b.price - a.price).map((product) => (
                 <ProductCard key={`${product.id}-${cartCount}`} product={product} onClick={() => {
                   setSelectedProduct(product);
                   router.push(`/catalog?product=${product.id}`, { scroll: false });
@@ -132,9 +130,8 @@ export default function CatalogoPage() {
 const ProductCard = memo(function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
   const [isHovered, setIsHovered] = useState(false);
   const t = useTranslations('catalog');
-  const mainColor = product.colors[0] || { images: ['/images/loading.png'], price: 0, stock: 0, name: '', hex: '#000000' };
-  const mainImage = mainColor.images?.[0] || '/images/loading.png';
-  const hoverImage = mainColor.images?.[1] || mainImage;
+  const mainImage = product.images?.[0] || '/images/loading.png';
+  const hoverImage = product.images?.[1] || mainImage;
 
   return (
     <button
@@ -169,11 +166,11 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
             </span>
           </div>
 
-          {mainColor.stock === 0 ? (
+          {product.stock === 0 ? (
             <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: '#ff0000', color: '#ffffff' }}>
               {t('soldOut')}
             </div>
-          ) : mainColor.stock < 3 ? (
+          ) : product.stock < 3 ? (
             <div className="absolute bottom-3 left-3 px-3 py-1.5 text-xs font-bold animate-pulse" style={{ backgroundColor: 'transparent', color: 'var(--accent-color, #D4AF37)', border: '1px solid var(--accent-color, #D4AF37)' }}>
               {t('lowStock')}
             </div>
@@ -182,7 +179,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       </div>
       <div className="p-5" style={{ backgroundColor: 'transparent', textAlign: 'right' }}>
         <h3 className="text-2xl md:text-4xl font-bold mb-1 transition-colors duration-300" style={{ color: isHovered ? 'var(--accent-color, #D4AF37)' : '#ffffff' }}>{product.name}</h3>
-        <p className="text-3xl md:text-5xl font-black" style={{ color: 'var(--accent-color, #D4AF37)' }}>{formatPrice(mainColor.price)}</p>
+        <p className="text-3xl md:text-5xl font-black" style={{ color: 'var(--accent-color, #D4AF37)' }}>{formatPrice(product.price)}</p>
       </div>
     </button>
   );
@@ -195,63 +192,49 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
   t: ReturnType<typeof useTranslations<'catalog'>>;
   setToast: (toast: { message: string; type: 'error' | 'success' | 'info' } | null) => void
 }) {
-  const [selectedColor, setSelectedColor] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [thumbStart, setThumbStart] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [cartQuantity, setCartQuantity] = useState(0);
-  const { stockMap: availableStock, refetch: refetchStock } = useAvailableStock(product.id);
+  const { stock: availableStock, refetch: refetchStock } = useAvailableStock(product.id, product.stock);
   const [loading, setLoading] = useState(false);
+
+  const images = (product.images || []).filter(img => img && img.trim() !== '');
+  const displayImages = images.length > 0 ? images : ['/images/loading.png'];
+  const realAvailableStock = availableStock;
 
   useEffect(() => {
     if (!product) return;
 
     setTimeout(() => setMounted(true), 0);
-    document.body.style.overflow = 'hidden';
 
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => {};
   }, [product.id]);
 
   useEffect(() => {
     const items = cart.get();
-    const existing = items.find(
-      i => i.productId === product.id && i.color === product.colors[selectedColor].name
-    );
+    const existing = items.find(i => i.productId === product.id);
     setCartQuantity(existing ? existing.quantity : 0);
     setAdded(existing ? existing.quantity > 0 : false);
-  }, [selectedColor, product.id, product.colors]);
+  }, [product.id]);
 
   useEffect(() => {
     const handleCartUpdate = () => {
       const items = cart.get();
-      const existing = items.find(
-        i => i.productId === product.id && i.color === product.colors[selectedColor].name
-      );
+      const existing = items.find(i => i.productId === product.id);
       setCartQuantity(existing ? existing.quantity : 0);
-      refetchStock(product.id); // Refetch stock después de actualizar carrito
+      refetchStock(product.id);
     };
 
     window.addEventListener('cart-updated', handleCartUpdate);
     return () => window.removeEventListener('cart-updated', handleCartUpdate);
-  }, [product.id, selectedColor, product.colors, refetchStock]);
-
-  useEffect(() => {
-    setSelectedImage(0);
-  }, [selectedColor]);
-
-  const currentColor = product.colors[selectedColor];
-  const images = currentColor.images.filter(img => img && img.trim() !== '');
-  const displayImages = images.length > 0 ? images : ['/images/loading.png'];
-  const realAvailableStock = availableStock[currentColor.name] ?? currentColor.stock;
+  }, [product.id, refetchStock]);
 
   const handleAddToCart = async () => {
     const items = cart.get();
-    const existing = items.find(
-      i => i.productId === product.id && i.color === currentColor.name
-    );
+    const existing = items.find(i => i.productId === product.id);
 
     const totalInCart = existing ? existing.quantity : 0;
     const newTotal = totalInCart + quantity;
@@ -263,7 +246,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     }
 
     if (newTotal > 5) {
-      setToast({ message: t('maxPerColor', { count: totalInCart }), type: 'error' });
+      setToast({ message: t('maxPerProduct', { count: totalInCart }), type: 'error' });
       return;
     }
 
@@ -273,14 +256,11 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     }
 
     setLoading(true);
-    const timestamp = Date.now();
 
     const cartResult = await cart.add({
       productId: product.id,
       name: product.name,
-      color: currentColor.name,
-      colorHex: currentColor.hex,
-      price: currentColor.price,
+      price: product.price,
       quantity: quantity,
       image: displayImages[0],
     });
@@ -295,8 +275,6 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     setCartQuantity(newTotal);
     setToast({ message: t('productAdded'), type: 'success' });
     setLoading(false);
-    
-    // NO llamar refetchStock aquí - el evento cart-updated lo hará
   };
 
   const handleQuantityChange = (newQty: number) => {
@@ -312,15 +290,25 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
   const modalRoot = document.getElementById('modal-root') || document.body;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/80" style={{ zIndex: 50000, top: '80px' }}>
+    <div className="fixed inset-0 bg-black/80 modal-overlay" style={{ zIndex: 50000, top: '80px' }}>
     <style dangerouslySetInnerHTML={{
       __html: `
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        @media (min-width: 769px) {
+          .modal-overlay { overflow-y: auto !important; }
+          .modal-container { overflow: hidden !important; max-height: 75vh !important; }
+          .modal-content { height: 100% !important; }
+          .modal-images { overflow-y: auto !important; min-height: 0 !important; }
+          .modal-main-image { max-height: 400px !important; }
+          .modal-main-image img { object-fit: cover !important; max-height: 400px !important; }
+          .modal-images .aspect-square { max-height: 80px !important; max-width: 80px !important; }
+          .modal-images div[style*="grid-template-columns"] { max-width: 350px !important; margin: 0 auto !important; }
+        }
         @media (max-width: 768px) {
-          .modal-container { width: 100vw !important; height: calc(100vh - 160px) !important; background-color: transparent !important; overflow-y: scroll !important; -webkit-overflow-scrolling: touch !important; pointer-events: auto !important; margin-top: 80px !important; margin-bottom: 80px !important; }
+          .modal-container { width: 100vw !important; height: calc(100vh - 160px) !important; background-color: transparent !important; overflow-y: scroll !important; -webkit-overflow-scrolling: touch !important; pointer-events: auto !important; margin-top: 80px !important; margin-bottom: 0px !important; }
           .modal-content { display: block !important; height: auto !important; min-height: calc(100vh - 140px) !important; padding-top: 0 !important; }
           .modal-title-wrapper { display: none !important; }
           .modal-images { padding: 0 !important; background-color: transparent !important; padding-top: 80px !important; }
@@ -330,20 +318,27 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
         }
       `
     }} />
-      <button onClick={onClose} className="fixed hover:bg-white rounded-full z-50" style={{ padding: '0.5rem', left: '1.5rem', top: '75px', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <div className="modal-title-wrapper" style={{ width: '70%', margin: '0 auto', paddingTop: '5rem', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: 0 }}>
-        <div className="mb-8 md:mb-12 text-center">
-          <h1 className="text-6xl font-black mb-4" style={{ color: '#ffffff' }}>{t('edition').toUpperCase()} {product.edition}</h1>
+      <div className="modal-title-wrapper" style={{ width: '90%', margin: '0 auto', paddingTop: '120px', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: 0 }}>
+        <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '3.75rem', fontWeight: 900, marginBottom: '1rem', color: '#ffffff' }}>FORGING MY OWN DESTINY</h1>
         </div>
       </div>
       <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 150px)', pointerEvents: 'none' }}>
-      <div className="modal-container bg-white" style={{ width: '85vw', height: '85vh', pointerEvents: 'auto' }}>
+      <div className="modal-container bg-white" style={{ width: '85vw', height: '85vh', pointerEvents: 'auto', position: 'relative' }}>
+        <button onClick={onClose} className="hover:scale-110 transition-transform" style={{ position: 'absolute', padding: '0.5rem', left: '1rem', top: '1rem', color: '#000000', backgroundColor: 'rgba(255, 255, 255, 0.9)', zIndex: 10, borderRadius: '50%', border: 'none', cursor: 'pointer' }}>
+          <ChevronLeft className="w-6 h-6" />
+        </button>
         <div className="modal-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="modal-images bg-gray-50 p-8 relative">
           <div className="max-w-2xl mx-auto w-full">
-            <div className="mb-4 flex items-center justify-center modal-main-image" style={{ backgroundColor: 'transparent', width: '100%', height: '500px' }}>
+            <div className="mb-4 flex items-center justify-center modal-main-image" style={{ backgroundColor: 'transparent', width: '100%', height: '500px', cursor: 'pointer' }} onClick={() => {
+              const next = (selectedImage + 1) % displayImages.length;
+              setSelectedImage(next);
+              if (displayImages.length > 4) {
+                const visibleEnd = (thumbStart + 3) % displayImages.length;
+                if (selectedImage === visibleEnd) setThumbStart((thumbStart + 1) % displayImages.length);
+              }
+            }}>
               <ResponsiveProductImage
                 src={displayImages[selectedImage]}
                 alt={product.name}
@@ -354,17 +349,40 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
                 loading="eager"
               />
             </div>
-            <div className="grid grid-cols-4 gap-3" style={{ marginTop: '1rem' }}>
-              {displayImages.map((img, idx) => (
-                <button
-                  key={`${selectedColor}-${idx}`}
-                  onClick={() => setSelectedImage(idx)}
-                  className="aspect-square overflow-hidden"
-                  style={{ border: idx === selectedImage ? '2px solid #000' : '2px solid #ddd', backgroundColor: 'transparent' }}
-                >
-                  <Image src={img} alt="" width={200} height={200} className="w-full h-full object-cover" unoptimized />
-                </button>
-              ))}
+            <div style={{ marginTop: '1rem', flexShrink: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', width: '100%', maxWidth: '100%' }}>
+                {(() => {
+                  const len = displayImages.length;
+                  if (len <= 4) return displayImages.map((img, idx) => ({ img, idx }));
+                  return [0, 1, 2, 3].map(offset => {
+                    const idx = (thumbStart + offset) % len;
+                    return { img: displayImages[idx], idx };
+                  });
+                })().map(({ img, idx }) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setSelectedImage(idx);
+                      const len = displayImages.length;
+                      if (len > 4) {
+                        const visibleEnd = (thumbStart + 3) % len;
+                        if (idx === visibleEnd) setThumbStart((thumbStart + 1) % len);
+                      }
+                    }}
+                    className="aspect-square overflow-hidden"
+                    style={{ border: idx === selectedImage ? '2px solid var(--accent-color, #ffd624)' : '2px solid rgba(255, 255, 255, 0.2)', backgroundColor: 'transparent', width: '100%' }}
+                  >
+                    <Image src={img} alt="" width={200} height={200} className="w-full h-full object-cover" unoptimized />
+                  </button>
+                ))}
+              </div>
+              {displayImages.length > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '0.75rem' }}>
+                  {displayImages.map((_, idx) => (
+                    <button key={idx} onClick={() => { setSelectedImage(idx); if (displayImages.length > 4) setThumbStart(idx); }} style={{ width: idx === selectedImage ? '20px' : '6px', height: '6px', borderRadius: '3px', backgroundColor: idx === selectedImage ? 'var(--accent-color, #ffd624)' : 'rgba(255,255,255,0.3)', border: 'none', padding: 0, cursor: 'pointer', transition: 'all 0.2s' }} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -373,7 +391,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
 
           {realAvailableStock > 0 && (
             <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-color, #ffd624)', marginBottom: '0.75rem' }} className="md:text-2xl">
-              {formatPrice(currentColor.price)}
+              {formatPrice(product.price)}
             </div>
           )}
 
@@ -394,34 +412,6 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
           <p style={{ marginBottom: '1.5rem', lineHeight: '1.6', color: '#ffffff', fontSize: '0.875rem' }} className="md:text-base">
             {locale === 'en' && product.descriptionEn ? product.descriptionEn : product.description}
           </p>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#ffffff' }}>{t('color')}</label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-              {product.colors.map((color, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => { setSelectedColor(idx); setSelectedImage(0); }}
-                  className="transition-all duration-200 hover:scale-110"
-                  style={{
-                    width: '2.5rem',
-                    height: '2.5rem',
-                    borderRadius: '50%',
-                    border: selectedColor === idx ? '3px solid var(--accent-color, #ffd624)' : '2px solid rgba(255, 255, 255, 0.3)',
-                    backgroundColor: color.hex,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: selectedColor === idx ? '0 0 20px rgba(var(--accent-color-rgb, 255, 214, 36), 0.5)' : 'none'
-                  }}
-                >
-                  {selectedColor === idx && <Check className="w-4 h-4 transition-transform duration-200 scale-110" style={{ color: color.hex === '#FFFFFF' ? '#000' : '#fff' }} />}
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize: '0.875rem', color: '#ffffff', marginTop: '0.5rem' }}>{t(currentColor.name)}</p>
-          </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#ffffff', marginBottom: '0.5rem' }}>
@@ -507,6 +497,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
               disabled={cartQuantity >= 5 || realAvailableStock < 1 || loading}
               loading={loading}
               fullWidth
+              data-testid="add-to-cart"
             />
           </div>
 
@@ -534,7 +525,7 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
           )}
 
               <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
-                {product.features.map((feature) => (
+                {((locale === 'es' ? product.features : product.featuresEn) || product.features || []).map((feature) => (
                   <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                     <Check className="w-4 h-4" style={{ color: 'var(--accent-color, #ffd624)' }} />
                     <span style={{ fontSize: '0.875rem', color: '#ffffff' }}>{feature}</span>
@@ -549,4 +540,3 @@ function ProductModal({ product, locale, onClose, t, setToast }: {
     modalRoot
   );
 }
-

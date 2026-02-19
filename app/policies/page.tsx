@@ -80,8 +80,8 @@ export default function PoliticasPage() {
           <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('termsTitle')}</h2>
           <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
             <p>{t('termsText1')}</p>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{locale === 'es' ? 'Razón Social:' : 'Legal Name:'}</strong> {t('termsText2').replace(/^.*?: /, '')}</p>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{locale === 'es' ? 'Productos:' : 'Products:'}</strong> {t('termsText3').replace(/^.*?: /, '')}</p>
+            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('legalName')}</strong> {t('termsText2').replace(/^.*?: /, '')}</p>
+            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('productsLabel')}</strong> {t('termsText3').replace(/^.*?: /, '')}</p>
           </div>
         </section>
 
@@ -97,30 +97,45 @@ export default function PoliticasPage() {
               <li>{t('retractionItem3')}</li>
               <li>{t('retractionItem4')}</li>
             </ul>
+            <p className="text-sm italic" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('retractionNote')}</p>
           </div>
         </section>
 
-        {/* Política de Envíos */}
+        {/* Envíos Nacional */}
         <section className="bg-black/40 backdrop-blur-md p-6 md:p-10 rounded-2xl transition-all duration-300 hover:bg-black/50 hover:scale-[1.01]">
-          <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('shippingTitle')}</h2>
+          <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('shippingNationalTitle')}</h2>
           <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('shippingCoverage').split(':')[0]}:</strong> {t('shippingCoverage').split(':')[1]}</p>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('shippingTimes')}</strong></p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>{t('shippingTime1')}</li>
-              <li>{t('shippingTime2')}</li>
+              <li>{t('shippingNationalCoverage')}</li>
+              <li>{t('shippingNationalTime1')}</li>
+              <li>{t('shippingNationalTime2')}</li>
+              <li>{t('shippingNationalCost')}</li>
+              <li>{t('shippingNationalTracking')}</li>
             </ul>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('shippingCosts').split(':')[0]}:</strong> {t('shippingCosts').split(':')[1]}</p>
-            <p>{t('shippingText')}</p>
           </div>
         </section>
 
-        {/* Política de Cambios y Devoluciones */}
+        {/* Envíos Internacional */}
+        <section className="bg-black/40 backdrop-blur-md p-6 md:p-10 rounded-2xl transition-all duration-300 hover:bg-black/50 hover:scale-[1.01]">
+          <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('shippingIntlTitle')}</h2>
+          <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>{t('shippingIntlCoverage')}</li>
+              <li>{t('shippingIntlTime1')}</li>
+              <li>{t('shippingIntlTime2')}</li>
+              <li>{t('shippingIntlCost')}</li>
+            </ul>
+            <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('shippingIntlNote1')}</p>
+            <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('shippingIntlNote2')}</p>
+          </div>
+        </section>
+
+        {/* Cambios y Devoluciones */}
         <section className="bg-black/40 backdrop-blur-md p-6 md:p-10 rounded-2xl transition-all duration-300 hover:bg-black/50 hover:scale-[1.01]">
           <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('returnsTitle')}</h2>
           <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('returnsDefective').split(':')[0]}:</strong> {t('returnsDefective').split(':')[1]}</p>
-            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('returnsExchange').split(':')[0]}:</strong> {t('returnsExchange').split(':')[1]}</p>
+            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('returnsDefective').split(':')[0]}:</strong>{t('returnsDefective').split(':').slice(1).join(':')}</p>
+            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('returnsExchange').split(':')[0]}:</strong>{t('returnsExchange').split(':').slice(1).join(':')}</p>
             <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('returnsProcess')}</strong></p>
             <ol className="list-decimal list-inside space-y-2 ml-4">
               <li>{t('returnsStep1')}</li>
@@ -135,11 +150,11 @@ export default function PoliticasPage() {
         <section className="bg-black/40 backdrop-blur-md p-6 md:p-10 rounded-2xl transition-all duration-300 hover:bg-black/50 hover:scale-[1.01]">
           <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('paymentTitle')}</h2>
           <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-            <p>{t('paymentText')}</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>{t('paymentMethod1')}</li>
               <li>{t('paymentMethod2')}</li>
               <li>{t('paymentMethod3')}</li>
+              <li>{t('paymentMethod4')}</li>
             </ul>
             <p>{t('paymentSecurity')}</p>
           </div>
@@ -150,12 +165,6 @@ export default function PoliticasPage() {
           <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('dataTitle')}</h2>
           <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
             <p>{t('dataText')}</p>
-            <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>{t('dataUse1')}</li>
-              <li>{t('dataUse2')}</li>
-              <li>{t('dataUse3')}</li>
-              <li>{t('dataUse4')}</li>
-            </ul>
             <p>{t('dataRights')}</p>
           </div>
         </section>
@@ -164,11 +173,8 @@ export default function PoliticasPage() {
         <section className="bg-black/40 backdrop-blur-md p-6 md:p-10 rounded-2xl transition-all duration-300 hover:bg-black/50 hover:scale-[1.01]">
           <h2 className="text-xl md:text-2xl font-black mb-6" style={{ color: 'var(--accent-color, #ffd624)' }}>{t('contactTitle')}</h2>
           <div className="space-y-4 text-sm md:text-base leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-            <p>{t('contactText')}</p>
-            <p>
-              <strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('contactEmail')}</strong><br />
-              <strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('contactHours')}</strong>
-            </p>
+            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('contactEmail')}</strong></p>
+            <p><strong style={{ color: 'var(--accent-color, #ffd624)' }}>{t('contactHours')}</strong></p>
             <p className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '2rem' }}>
               {t('lastUpdate')}
             </p>

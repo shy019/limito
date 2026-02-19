@@ -138,7 +138,7 @@ export default function AdvancedSettings({ onSuccess, onError }: Props) {
     return (
       <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
         <p className="text-sm font-bold text-yellow-800">
-          ⚠️ Configuración avanzada solo disponible con Turso activado (USE_TURSO=true)
+          ⚠️ No se pudo cargar la configuración
         </p>
       </div>
     );
@@ -182,7 +182,7 @@ export default function AdvancedSettings({ onSuccess, onError }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-bold mb-2 text-gray-700">Máx. por color</label>
+            <label className="block text-sm font-bold mb-2 text-gray-700">Máx. por producto</label>
             <input
               type="number"
               min="1"

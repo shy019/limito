@@ -3,7 +3,13 @@ import { getSettingsFromTurso, updateSettingInTurso, getPromoCodesFromTurso, add
 import { hashPassword } from '@/lib/password';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/rate-limit';
+import { verifyAdminToken } from '@/lib/auth';
 import type { PromoCode } from '@/types/admin';
+
+async function checkAdmin(req: NextRequest) {
+  const token = req.cookies.get('admin_token')?.value;
+  return token && await verifyAdminToken(token);
+}
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
@@ -14,6 +20,10 @@ export async function GET(req: NextRequest) {
       { error: 'Too many requests' },
       { status: 429 }
     );
+  }
+
+  if (!await checkAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -46,6 +56,10 @@ export async function POST(req: NextRequest) {
       { error: 'Too many requests' },
       { status: 429 }
     );
+  }
+
+  if (!await checkAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

@@ -48,9 +48,9 @@ describe('email', () => {
 
   beforeAll(() => {
     process.env.RESEND_API_KEY = 'test-key';
-    process.env.RESEND_FROM_EMAIL = 'test@limito.co';
-    process.env.CONTACT_EMAIL = 'hola@limito.co';
-    process.env.PARTNER_EMAIL = 'partner@limito.co';
+    process.env.RESEND_FROM_EMAIL = 'test@limitohats.com';
+    process.env.CONTACT_EMAIL = 'limitohats@gmail.com';
+    process.env.PARTNER_EMAIL = 'partner@limitohats.com';
     process.env.RESEND_AUDIENCE_ID = 'audience-123';
   });
 

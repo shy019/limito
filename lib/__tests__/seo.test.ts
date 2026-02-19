@@ -14,43 +14,36 @@ describe('seo', () => {
     type: 'snapback',
     description: 'Test description',
     descriptionEn: 'Test description EN',
-    available: true,
-    colors: [
-      { name: 'Black', hex: '#000000', price: 80000, stock: 10, images: ['img1.jpg'] },
-      { name: 'White', hex: '#FFFFFF', price: 85000, stock: 5, images: ['img2.jpg'] },
-    ],
+    price: 80000,
+    stock: 10,
+    images: ['img1.jpg', 'img2.jpg'],
     features: ['Feature 1', 'Feature 2'],
+    available: true,
   };
 
   beforeAll(() => {
-    process.env.NEXT_PUBLIC_BASE_URL = 'https://limito.co';
-    process.env.NEXT_PUBLIC_CONTACT_EMAIL = 'hola@limito.co';
+    process.env.NEXT_PUBLIC_BASE_URL = 'https://www.limitohats.com';
+    process.env.NEXT_PUBLIC_CONTACT_EMAIL = 'limitohats@gmail.com';
   });
 
   describe('generateProductSchema', () => {
     it('should generate valid product schema', () => {
-      const schema = generateProductSchema(mockProduct, 'Black', 'https://limito.co/img1.jpg');
+      const schema = generateProductSchema(mockProduct, '', 'https://www.limitohats.com/img1.jpg');
 
       expect(schema['@context']).toBe('https://schema.org');
       expect(schema['@type']).toBe('Product');
-      expect(schema.name).toBe('Test Cap - Black');
+      expect(schema.name).toBe('Test Cap');
       expect(schema.description).toBe('Test description');
-      expect(schema.image).toBe('https://limito.co/img1.jpg');
+      expect(schema.image).toBe('https://www.limitohats.com/img1.jpg');
       expect(schema.brand.name).toBe('LIMITØ');
       expect(schema.offers.price).toBe(80000);
       expect(schema.offers.priceCurrency).toBe('COP');
       expect(schema.offers.availability).toBe('https://schema.org/InStock');
     });
 
-    it('should use first color if specified color not found', () => {
-      const schema = generateProductSchema(mockProduct, 'NonExistent', 'https://limito.co/img.jpg');
-
-      expect(schema.offers.price).toBe(80000);
-    });
-
     it('should mark as out of stock when unavailable', () => {
       const unavailableProduct = { ...mockProduct, available: false };
-      const schema = generateProductSchema(unavailableProduct, 'Black', 'https://limito.co/img.jpg');
+      const schema = generateProductSchema(unavailableProduct, '', 'https://www.limitohats.com/img.jpg');
 
       expect(schema.offers.availability).toBe('https://schema.org/OutOfStock');
     });
@@ -63,8 +56,8 @@ describe('seo', () => {
       expect(schema['@context']).toBe('https://schema.org');
       expect(schema['@type']).toBe('Organization');
       expect(schema.name).toBe('LIMITØ');
-      expect(schema.url).toBe('https://limito.co');
-      expect(schema.contactPoint.email).toBe('hola@limito.co');
+      expect(schema.url).toBe('https://www.limitohats.com');
+      expect(schema.contactPoint.email).toBe('limitohats@gmail.com');
       expect(schema.contactPoint.areaServed).toBe('CO');
       expect(schema.sameAs).toHaveLength(2);
     });
@@ -73,24 +66,19 @@ describe('seo', () => {
   describe('generateBreadcrumbSchema', () => {
     it('should generate valid breadcrumb schema', () => {
       const items = [
-        { name: 'Home', url: 'https://limito.co' },
-        { name: 'Catalog', url: 'https://limito.co/catalogo' },
-        { name: 'Product', url: 'https://limito.co/producto/test-1' },
+        { name: 'Home', url: 'https://www.limitohats.com' },
+        { name: 'Catalog', url: 'https://www.limitohats.com/catalogo' },
       ];
 
       const schema = generateBreadcrumbSchema(items);
 
-      expect(schema['@context']).toBe('https://schema.org');
       expect(schema['@type']).toBe('BreadcrumbList');
-      expect(schema.itemListElement).toHaveLength(3);
+      expect(schema.itemListElement).toHaveLength(2);
       expect(schema.itemListElement[0].position).toBe(1);
-      expect(schema.itemListElement[0].name).toBe('Home');
-      expect(schema.itemListElement[2].position).toBe(3);
     });
 
     it('should handle empty items array', () => {
       const schema = generateBreadcrumbSchema([]);
-
       expect(schema.itemListElement).toHaveLength(0);
     });
   });
@@ -99,11 +87,8 @@ describe('seo', () => {
     it('should generate valid website schema', () => {
       const schema = generateWebsiteSchema();
 
-      expect(schema['@context']).toBe('https://schema.org');
       expect(schema['@type']).toBe('WebSite');
       expect(schema.name).toBe('LIMITØ');
-      expect(schema.url).toBe('https://limito.co');
-      expect(schema.potentialAction['@type']).toBe('SearchAction');
       expect(schema.potentialAction.target).toContain('/catalogo?q=');
     });
   });

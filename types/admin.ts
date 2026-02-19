@@ -18,7 +18,6 @@ export interface Order {
 
 export interface OrderItem {
   name: string;
-  color: string;
   quantity: number;
   price: number;
 }

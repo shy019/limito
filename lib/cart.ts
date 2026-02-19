@@ -2,8 +2,6 @@ export interface CartItem {
   productId: string;
   name: string;
   price: number;
-  color: string;
-  colorHex: string;
   quantity: number;
   image: string;
   reservedAt: number;
@@ -93,14 +91,14 @@ export const cart = {
       const res = await fetch('/api/cart/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, items: items.map(i => ({ productId: i.productId, color: i.color })) }),
+        body: JSON.stringify({ sessionId, items: items.map(i => ({ productId: i.productId })) }),
       });
 
       if (!res.ok) return items;
 
       const { validItems } = await res.json();
-      const validKeys = new Set(validItems.map((v: {productId: string, color: string}) => `${v.productId}-${v.color}`));
-      const synced = items.filter(i => validKeys.has(`${i.productId}-${i.color}`));
+      const validKeys = new Set(validItems.map((v: {productId: string}) => v.productId));
+      const synced = items.filter(i => validKeys.has(i.productId));
 
       if (synced.length !== items.length) {
         localStorage.setItem(CART_KEY, JSON.stringify(synced));
@@ -120,9 +118,7 @@ export const cart = {
   add: async (item: Omit<CartItem, 'quantity' | 'reservedAt'> & { quantity: number }): Promise<CartResult> => {
     try {
       const items = cart.get();
-      const existing = items.find(
-        i => i.productId === item.productId && i.color === item.color
-      );
+      const existing = items.find(i => i.productId === item.productId);
       const currentQuantity = existing ? existing.quantity : 0;
       const newTotalQuantity = currentQuantity + item.quantity;
       const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -139,7 +135,6 @@ export const cart = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId: item.productId,
-          color: item.color,
           quantity: newTotalQuantity,
           sessionId,
         }),
@@ -169,18 +164,16 @@ export const cart = {
     }
   },
 
-  remove: async (productId: string, color: string): Promise<void> => {
+  remove: async (productId: string): Promise<void> => {
     try {
       const sessionId = getSessionId();
       await fetch('/api/cart/release', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, color, sessionId }),
+        body: JSON.stringify({ productId, sessionId }),
       });
 
-      const items = cart.get().filter(
-        i => !(i.productId === productId && i.color === color)
-      );
+      const items = cart.get().filter(i => i.productId !== productId);
       localStorage.setItem(CART_KEY, JSON.stringify(items));
       
       // Limpiar cache
@@ -190,10 +183,10 @@ export const cart = {
     } catch {}
   },
 
-  updateQuantity: async (productId: string, color: string, quantity: number): Promise<CartResult> => {
+  updateQuantity: async (productId: string, quantity: number): Promise<CartResult> => {
     try {
       const items = cart.get();
-      const item = items.find(i => i.productId === productId && i.color === color);
+      const item = items.find(i => i.productId === productId);
       if (item) {
         const sessionId = getSessionId();
         const res = await fetch('/api/cart/reserve', {
@@ -201,7 +194,6 @@ export const cart = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             productId,
-            color,
             quantity: Math.max(1, Math.min(MAX_ITEMS, quantity)),
             sessionId,
           }),
@@ -238,11 +230,7 @@ export const cart = {
         await fetch('/api/cart/release', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            productId: item.productId, 
-            color: item.color, 
-            sessionId 
-          }),
+          body: JSON.stringify({ productId: item.productId, sessionId }),
         });
       }
 

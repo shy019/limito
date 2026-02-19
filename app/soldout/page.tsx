@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Instagram, Youtube, Send, Sparkles } from 'lucide-react';
+import { Instagram, Youtube, Send } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { getCurrentMode } from '@/lib/store-config';
 import LoadingScreen from '@/components/LoadingScreen';
 import Toast from '@/components/Toast';
 import Logo from '@/components/Logo';
@@ -48,13 +47,12 @@ export default function SoldOutPage() {
       if (res.ok) {
         setSuccess(true);
         setEmail('');
-        setToast({ message: locale === 'es' ? '¡Gracias! Te avisaremos pronto' : 'Thanks! We\'ll notify you soon', type: 'success' });
+        setToast({ message: t('soldout.successToast'), type: 'success' });
       } else {
         setToast({ message: t('newsletter.error'), type: 'error' });
       }
-    } catch (err) {
-      console.error('Newsletter error:', err);
-      setToast({ message: t('home.password.errorConnection'), type: 'error' });
+    } catch {
+      setToast({ message: t('password.errorConnection'), type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -85,43 +83,42 @@ export default function SoldOutPage() {
             
             <div className="space-y-4">
               <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight">
-                {locale === 'es' ? '¡Todo Agotado!' : 'Sold Out!'}
+                {t('soldout.title')}
               </h2>
               <p className="text-xl md:text-2xl text-white font-medium max-w-xl mx-auto leading-relaxed">
-                {locale === 'es' ? 'Gracias por tu interés. Nuestro drop actual se agotó completamente.' : 'Thanks for your interest. Our current drop is completely sold out.'}
+                {t('soldout.message')}
               </p>
             </div>
 
             <div className="inline-block bg-[var(--accent-color, #ffd624)] text-black px-8 py-4 rounded-full shadow-2xl">
               <p className="text-sm uppercase tracking-[0.3em] font-bold">
-                {locale === 'es' ? 'Próximo Drop' : 'Next Drop'}
+                {t('soldout.nextDrop')}
               </p>
               <p className="text-3xl font-black mt-1">
-                {locale === 'es' ? 'Muy Pronto' : 'Coming Soon'}
+                {t('soldout.comingSoon')}
               </p>
             </div>
           </div>
 
-          {/* Newsletter Card */}
           <div className="bg-black/40 backdrop-blur-md p-10 rounded-2xl shadow-2xl">
             <h3 className="text-2xl font-black mb-3 text-white uppercase tracking-wide">
-              {locale === 'es' ? 'Sé el Primero en Enterarte' : 'Be the First to Know'}
+              {t('soldout.ctaTitle')}
             </h3>
             <p className="text-gray-300 mb-6 text-sm">
-              {locale === 'es' ? 'Únete a nuestro newsletter y recibe acceso anticipado al próximo drop' : 'Join our newsletter and get early access to the next drop'}
+              {t('soldout.ctaMessage')}
             </p>
             
             {success ? (
               <div className="py-8">
                 <div className="inline-block bg-[#16A34A] text-white px-6 py-3 rounded-full">
-                  <p className="font-bold">{locale === 'es' ? '¡Gracias! Te avisaremos pronto 🎉' : 'Thanks! We\'ll notify you soon 🎉'}</p>
+                  <p className="font-bold">{t('soldout.thankYou')}</p>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleNewsletterSubmit} className="space-y-4">
                 <input
                   type="email"
-                  placeholder={locale === 'es' ? 'tu@email.com' : 'your@email.com'}
+                  placeholder={t('soldout.placeholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -132,59 +129,37 @@ export default function SoldOutPage() {
                   disabled={submitting}
                   className="w-full bg-[var(--accent-color, #ffd624)] text-black py-5 text-base font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 hover:brightness-110 hover:shadow-2xl hover:scale-105 active:scale-95"
                 >
-                  {locale === 'es' ? 'OBTENER ACCESO' : 'GET ACCESS'}
+                  {t('soldout.button')}
                 </button>
               </form>
             )}
           </div>
 
-          {/* Contact Info */}
           <div className="space-y-6">
             <p className="text-gray-300 text-sm">
-              {locale === 'es' ? '¿Tienes preguntas? Escríbenos a' : 'Have questions? Write to us at'}{' '}
-              <a href="mailto:hola@limito.co" className="text-[var(--accent-color, #ffd624)] hover:underline font-bold">
-                hola@limito.co
+              {t('soldout.questions')}{' '}
+              <a href="mailto:limitohats@gmail.com" className="text-[var(--accent-color, #ffd624)] hover:underline font-bold">
+                limitohats@gmail.com
               </a>
             </p>
 
-            {/* Social Links */}
             <div className="flex gap-8 justify-center">
-              <a
-                href="https://instagram.com/limito"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all"
-              >
+              <a href="https://instagram.com/limitohats" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all">
                 <Instagram className="w-8 h-8" strokeWidth={2.5} />
               </a>
-              <a
-                href="https://youtube.com/@limito"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all"
-              >
+              <a href="https://youtube.com/@limito" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all">
                 <Youtube className="w-8 h-8" strokeWidth={2.5} />
               </a>
-              <a
-                href="https://tiktok.com/@limito"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all"
-              >
+              <a href="https://tiktok.com/@limitohats" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[var(--accent-color, #ffd624)] hover:scale-125 transition-all">
                 <Send className="w-8 h-8" strokeWidth={2.5} />
               </a>
             </div>
           </div>
 
-          {/* Footer */}
           <div className="text-xs space-x-4 text-gray-400 font-medium">
-            <a href="/contact" className="hover:text-white transition-colors">
-              {locale === 'es' ? 'Contacto' : 'Contact'}
-            </a>
+            <a href="/contact" className="hover:text-white transition-colors">{t('footer.contact')}</a>
             <span>·</span>
-            <a href="/policies" className="hover:text-white transition-colors">
-              {locale === 'es' ? 'Políticas' : 'Policies'}
-            </a>
+            <a href="/policies" className="hover:text-white transition-colors">{t('footer.policies')}</a>
           </div>
         </div>
       </div>

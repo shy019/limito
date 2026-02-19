@@ -33,7 +33,6 @@ export async function uploadImage(
   try {
     const existing = await client.api.resource(`${folder}/${finalPublicId}`, { resource_type: resourceType });
     if (existing?.secure_url) {
-      console.log(`✅ ${isVideo ? 'Video' : 'Imagen'} ya existe, reutilizando:`, existing.secure_url);
       return existing.secure_url;
     }
   } catch {

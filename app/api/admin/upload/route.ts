@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/cloudinary';
 import { updateSettingInTurso } from '@/lib/turso-products-v2';
+import { verifyAdminToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token || !(await verifyAdminToken(token))) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string || 'image';
